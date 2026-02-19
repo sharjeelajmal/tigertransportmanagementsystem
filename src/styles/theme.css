@@ -1,0 +1,52 @@
+:root {
+  /* ===================== */
+  /* BRAND COLORS          */
+  /* ===================== */
+  --primary: #B50104;
+  --primary-dark: #8B0003;
+  --primary-light: #E8000A;
+  --primary-foreground: #FFFFFF;
+
+  /* ===================== */
+  /* SURFACE COLORS        */
+  /* ===================== */
+  --background: #F8F9FA;
+  --foreground: #0D0D0D;
+
+  --card: #FFFFFF;
+  --card-foreground: #0D0D0D;
+
+  --sidebar-bg: #0D0D0D;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-muted: rgba(255, 255, 255, 0.5);
+  --sidebar-active-bg: #B50104;
+  --sidebar-hover-bg: rgba(181, 1, 4, 0.15);
+
+  /* ===================== */
+  /* UTILITY COLORS        */
+  /* ===================== */
+  --muted: #F1F3F5;
+  --muted-foreground: #6B7280;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #B50104;
+
+  /* ===================== */
+  /* STATUS COLORS         */
+  /* ===================== */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+}
+
+/* Dark Mode (Future Proofing) */
+.dark {
+  --background: #0D0D0D;
+  --foreground: #F9FAFB;
+  --card: #1A1A1A;
+  --card-foreground: #F9FAFB;
+  --border: #2D2D2D;
+  --input: #2D2D2D;
+  --muted: #1A1A1A;
+  --muted-foreground: #9CA3AF;
+}
