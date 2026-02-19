@@ -145,7 +145,12 @@ export default function AttendancePage() {
                 <div className="w-56">
                     <CustomDatePicker
                         value={date}
-                        onChange={(d: Date) => setDate(d.toISOString().split("T")[0])}
+                        onChange={(d: Date) => {
+                            const yyyy = d.getFullYear();
+                            const mm = String(d.getMonth() + 1).padStart(2, "0");
+                            const dd = String(d.getDate()).padStart(2, "0");
+                            setDate(`${yyyy}-${mm}-${dd}`);
+                        }}
                     />
                 </div>
 

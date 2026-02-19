@@ -6,7 +6,7 @@ import Vehicle from '@/models/Vehicle';
 export async function GET() {
     try {
         await dbConnect();
-        const vehicles = await Vehicle.find({}).sort({ createdAt: -1 });
+        const vehicles = await Vehicle.find({}).sort({ createdAt: -1 }).lean();
         return NextResponse.json({ success: true, data: vehicles });
     } catch (error) {
         return NextResponse.json(

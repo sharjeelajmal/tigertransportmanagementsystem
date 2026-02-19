@@ -51,7 +51,10 @@ export default function AddVehiclePage() {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
     const setDate = (field: keyof FormData) => (date: Date) => {
-        setForm((prev) => ({ ...prev, [field]: date.toISOString().split("T")[0] }));
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+        setForm((prev) => ({ ...prev, [field]: `${yyyy}-${mm}-${dd}` }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -111,7 +114,7 @@ export default function AddVehiclePage() {
                     variants={sectionVariants}
                     initial="hidden"
                     animate="visible"
-                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
+                    className="bg-white rounded-2xl border border-gray-100"
                     style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.05)" }}
                 >
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
@@ -162,7 +165,7 @@ export default function AddVehiclePage() {
                     variants={sectionVariants}
                     initial="hidden"
                     animate="visible"
-                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
+                    className="bg-white rounded-2xl border border-gray-100"
                     style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.05)" }}
                 >
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">

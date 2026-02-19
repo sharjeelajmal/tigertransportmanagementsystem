@@ -13,13 +13,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Check if attendance already exists for this date
-        const existing = await Attendance.findOne({ date });
+        const existing = await Attendance.findOne({ date }).lean();
         if (existing) {
             return NextResponse.json({ success: true, data: existing, isNew: false });
         }
 
         // No attendance yet — return staff list with default "Present"
-        const staffList = await Staff.find({}).sort({ createdAt: 1 });
+        const staffList = await Staff.find({}, {
+            _id: 1, firstName: 1, lastName: 1, designation: 1
+        }).sort({ createdAt: 1 }).lean();
         const records = staffList.map((s) => ({
             staffId: s._id.toString(),
             firstName: s.firstName,

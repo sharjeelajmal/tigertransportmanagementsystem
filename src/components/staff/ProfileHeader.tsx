@@ -56,21 +56,23 @@ const ProfileHeader = ({ firstName, lastName, designation, photo }: ProfileHeade
                     </motion.p>
                 </div>
 
-                {/* Profile Image */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
-                    className="relative w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border-4 border-white/30 shadow-2xl"
-                >
-                    <Image
-                        src={photo || '/placeholder-avatar.png'} // Ensure you have a placeholder
-                        alt={`${firstName} ${lastName}`}
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-                </motion.div>
+                {/* Profile Image — only if photo provided */}
+                {photo && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
+                        className="relative w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border-4 border-white/30 shadow-2xl flex-shrink-0"
+                    >
+                        <Image
+                            src={photo}
+                            alt={`${firstName} ${lastName}`}
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                    </motion.div>
+                )}
             </div>
         </motion.div>
     );

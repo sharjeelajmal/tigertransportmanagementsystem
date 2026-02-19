@@ -16,6 +16,7 @@ import {
     Menu,
     X,
     ClipboardList,
+    Receipt,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 
@@ -30,6 +31,7 @@ const navGroups = [
             { name: "Staff", icon: Users, path: "/dashboard/staff" },
             { name: "Attendance", icon: ClipboardList, path: "/dashboard/attendance" },
             { name: "Vehicles", icon: Truck, path: "/dashboard/vehicles" },
+            { name: "Expenses", icon: Receipt, path: "/dashboard/expenses" },
             { name: "Routes", icon: MapPin, path: "/dashboard/routes" },
         ],
     },

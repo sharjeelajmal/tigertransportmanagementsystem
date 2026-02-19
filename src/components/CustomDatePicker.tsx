@@ -13,13 +13,23 @@ interface CustomDatePickerProps {
 
 type ViewMode = 'days' | 'months' | 'years';
 
+// Helper: YYYY-MM-DD string ko timezone-safe Date mein convert karo
+function parseLocalDate(v: string | Date): Date {
+    if (v instanceof Date) return v;
+    const parts = v.split('-');
+    if (parts.length === 3) {
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    }
+    return new Date(v);
+}
+
 export default function CustomDatePicker({ value, onChange, label, required }: CustomDatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+    const [viewDate, setViewDate] = useState(value ? parseLocalDate(value) : new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('days');
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const selectedDate = value ? new Date(value) : null;
+    const selectedDate = value ? parseLocalDate(value) : null;
     const today = new Date();
 
     useEffect(() => {

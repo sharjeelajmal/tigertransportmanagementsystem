@@ -162,7 +162,7 @@ export default function VehiclePage() {
     ];
 
     return (
-        <div className="space-y-5 max-w-7xl mx-auto">
+        <div className="space-y-5 max-w-7xl mx-auto overflow-x-hidden">
             {/* ── Page Header ── */}
             <motion.div
                 initial={{ opacity: 0, y: -12 }}
@@ -448,7 +448,7 @@ export default function VehiclePage() {
                                         initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.04 }}
-                                        className="px-4 py-4 flex items-center gap-3"
+                                        className="px-4 py-4 flex items-center gap-3 min-w-0"
                                     >
                                         {/* Icon */}
                                         <div
@@ -463,7 +463,7 @@ export default function VehiclePage() {
                                             <p className="text-sm font-bold text-gray-800 truncate">
                                                 {v.vehicleName}
                                             </p>
-                                            <p className="text-xs text-gray-400 font-mono mt-0.5">{v.plateNumber}</p>
+                                            <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">{v.plateNumber}</p>
                                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
                                                     {v.modelYear}
