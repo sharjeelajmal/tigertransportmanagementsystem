@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Loader from "@/components/Loader";
 import CustomDatePicker from "@/components/CustomDatePicker";
+import Pagination from "@/components/Pagination";
 
 interface AttendanceRecord {
     staffId: string;
@@ -59,6 +60,9 @@ export default function AttendancePage() {
     const [toast, setToast] = useState<Toast | null>(null);
     const [savedDate, setSavedDate] = useState<string | null>(null);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const showToast = (t: Toast) => {
         setToast(t);
         setTimeout(() => setToast(null), 3500);
@@ -81,6 +85,7 @@ export default function AttendancePage() {
     }, []);
 
     useEffect(() => {
+        setCurrentPage(1);
         fetchAttendance(date);
     }, [date, fetchAttendance]);
 
@@ -123,6 +128,12 @@ export default function AttendancePage() {
     const presentCount = records.filter((r) => r.status === "Present").length;
     const absentCount = records.filter((r) => r.status === "Absent").length;
     const total = records.length;
+
+    const totalPages = Math.ceil(records.length / itemsPerPage);
+    const paginatedRecords = records.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     return (
         <div className="space-y-5 max-w-5xl mx-auto">
@@ -262,15 +273,20 @@ export default function AttendancePage() {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan={4} className="py-20 text-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader size="md" />
-                                            <p className="text-gray-400 text-sm">Loading attendance...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : records.length === 0 ? (
+                                [...Array(5)].map((_, idx) => (
+                                    <tr key={`sk-${idx}`} className="animate-pulse border-b border-gray-50">
+                                        <td className="px-6 py-4 w-16"><div className="h-4 bg-gray-100 rounded w-6"></div></td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-gray-100"></div>
+                                                <div className="h-4 bg-gray-100 rounded w-28"></div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-24"></div></td>
+                                        <td className="px-6 py-4"><div className="h-8 bg-gray-100 rounded-xl w-20"></div></td>
+                                    </tr>
+                                ))
+                            ) : paginatedRecords.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="py-20 text-center">
                                         <div className="flex flex-col items-center gap-2">
@@ -281,7 +297,7 @@ export default function AttendancePage() {
                                     </td>
                                 </tr>
                             ) : (
-                                records.map((r, i) => (
+                                paginatedRecords.map((r, i) => (
                                     <motion.tr
                                         key={r.staffId}
                                         initial={{ opacity: 0 }}
@@ -292,7 +308,7 @@ export default function AttendancePage() {
                                         {/* Sr */}
                                         <td className="px-6 py-4 w-16">
                                             <span className="text-xs font-bold text-gray-300">
-                                                {String(i + 1).padStart(2, "0")}
+                                                {String((currentPage - 1) * itemsPerPage + i + 1).padStart(2, "0")}
                                             </span>
                                         </td>
 
@@ -378,9 +394,18 @@ export default function AttendancePage() {
                 {/* Mobile Card List */}
                 <div className="md:hidden">
                     {isLoading ? (
-                        <div className="flex flex-col items-center gap-3 py-16">
-                            <Loader size="md" />
-                            <p className="text-gray-400 text-sm">Loading...</p>
+                        <div className="divide-y divide-gray-50">
+                            {[...Array(5)].map((_, idx) => (
+                                <div key={`sk-mob-${idx}`} className="px-4 py-3.5 flex items-center gap-3 animate-pulse">
+                                    <div className="w-6 h-4 bg-gray-100 rounded flex-shrink-0"></div>
+                                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex-shrink-0"></div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 bg-gray-100 rounded w-24"></div>
+                                        <div className="h-3 bg-gray-100 rounded-full w-16"></div>
+                                    </div>
+                                    <div className="h-8 bg-gray-100 rounded-xl w-14 flex-shrink-0"></div>
+                                </div>
+                            ))}
                         </div>
                     ) : records.length === 0 ? (
                         <div className="flex flex-col items-center gap-2 py-16">
@@ -389,7 +414,7 @@ export default function AttendancePage() {
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-50">
-                            {records.map((r, i) => (
+                            {paginatedRecords.map((r, i) => (
                                 <motion.div
                                     key={r.staffId}
                                     initial={{ opacity: 0 }}
@@ -398,7 +423,7 @@ export default function AttendancePage() {
                                     className="px-4 py-3.5 flex items-center gap-3"
                                 >
                                     <span className="text-xs font-bold text-gray-300 w-6 flex-shrink-0">
-                                        {String(i + 1).padStart(2, "0")}
+                                        {String((currentPage - 1) * itemsPerPage + i + 1).padStart(2, "0")}
                                     </span>
                                     <div
                                         className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0"
@@ -441,6 +466,17 @@ export default function AttendancePage() {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination */}
+                {!isLoading && totalPages > 1 && (
+                    <div className="border-t border-gray-100 bg-white">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )}
 
                 {/* Footer — Save Button */}
                 {!isLoading && records.length > 0 && (

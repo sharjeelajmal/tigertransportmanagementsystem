@@ -11,6 +11,8 @@ import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import Loader from "@/components/Loader";
 import DeleteModal from "@/components/DeleteModal";
+import Pagination from "@/components/Pagination";
+import CustomMonthPicker from "@/components/CustomMonthPicker";
 
 interface Expense {
     _id: string;
@@ -72,17 +74,22 @@ export default function ExpensesPage() {
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
     const [status, setStatus] = useState("All");
-    const [dateFilter, setDateFilter] = useState("");
+    const [monthFilter, setMonthFilter] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
     const [showFilters, setShowFilters] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    useEffect(() => { fetchExpenses(); }, []);
+    useEffect(() => { fetchExpenses(); }, [monthFilter]);
 
     const fetchExpenses = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/expenses");
+            const res = await fetch(`/api/expenses?month=${monthFilter}`);
             const data = await res.json();
             if (data.success) setExpenses(data.data);
         } catch { console.error("Failed to fetch expenses"); }
@@ -107,9 +114,18 @@ export default function ExpensesPage() {
         const matchSearch = e.expenseType.toLowerCase().includes(search.toLowerCase()) || (e.vehicleNo || "").toLowerCase().includes(search.toLowerCase());
         const matchCat = category === "All" || e.category === category;
         const matchStatus = status === "All" || e.status === status;
-        const matchDate = !dateFilter || e.date === dateFilter;
-        return matchSearch && matchCat && matchStatus && matchDate;
+        return matchSearch && matchCat && matchStatus;
     });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, category, status, monthFilter]);
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginatedData = filtered.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const totalExpense = filtered.reduce((s, e) => s + e.totalAmount, 0);
     const officeExpense = filtered.filter(e => e.category === "Office Expense").reduce((s, e) => s + e.totalAmount, 0);
@@ -123,7 +139,7 @@ export default function ExpensesPage() {
         { label: "Highest Category", value: highestCat, icon: TrendingUp },
     ];
 
-    const activeFilters = category !== "All" || status !== "All" || !!dateFilter;
+    const activeFilters = category !== "All" || status !== "All";
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto">
@@ -189,10 +205,14 @@ export default function ExpensesPage() {
                             <div className="px-4 md:px-6 py-4 bg-gray-50 border-b border-gray-100 flex flex-wrap items-end gap-3">
                                 <CustomDropdown label="Category" options={categoryOptions} value={category} onChange={setCategory} className="w-full sm:w-48" />
                                 <CustomDropdown label="Status" options={statusOptions} value={status} onChange={setStatus} className="w-full sm:w-44" />
-                                <div className="w-full sm:w-52">
-                                    <CustomDatePicker label="Filter by Date" value={dateFilter} onChange={(d: Date) => { const yyyy = d.getFullYear(); const mm = String(d.getMonth() + 1).padStart(2, "0"); const dd = String(d.getDate()).padStart(2, "0"); setDateFilter(`${yyyy}-${mm}-${dd}`); }} />
+                                <div className="w-full sm:w-48">
+                                    <CustomMonthPicker
+                                        label="Filter by Month"
+                                        value={monthFilter}
+                                        onChange={setMonthFilter}
+                                    />
                                 </div>
-                                {activeFilters && (<button onClick={() => { setCategory("All"); setStatus("All"); setDateFilter(""); }} className="flex items-center gap-1 text-xs font-semibold text-[#B50104] hover:underline mb-1 cursor-pointer"><X size={12} /> Clear all</button>)}
+                                {activeFilters && (<button onClick={() => { setCategory("All"); setStatus("All"); const d = new Date(); setMonthFilter(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }} className="flex items-center gap-1 text-xs font-semibold text-[#B50104] hover:underline mb-1 cursor-pointer pb-2"><X size={12} /> Clear all</button>)}
                             </div>
                         </motion.div>
                     )}
@@ -220,9 +240,9 @@ export default function ExpensesPage() {
                                     </div>
                                 </td></tr>
                             ) : (
-                                filtered.map((e, i) => (
+                                paginatedData.map((e, i) => (
                                     <motion.tr key={e._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="border-b border-gray-50 hover:bg-[#FFF8F8] transition-colors">
-                                        <td className="px-5 py-4 w-14"><span className="text-xs font-bold text-gray-300">{String(i + 1).padStart(2, "0")}</span></td>
+                                        <td className="px-5 py-4 w-14"><span className="text-xs font-bold text-gray-300">{String((currentPage - 1) * itemsPerPage + i + 1).padStart(2, "0")}</span></td>
                                         <td className="px-5 py-4"><span className="text-sm font-medium text-gray-600 whitespace-nowrap">{formatDate(e.date)}</span></td>
                                         <td className="px-5 py-4"><CatBadge category={e.category} /></td>
                                         <td className="px-5 py-4"><span className="text-sm font-medium text-gray-600">{e.vehicleNo || "—"}</span></td>
@@ -258,7 +278,7 @@ export default function ExpensesPage() {
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-50">
-                            {filtered.map((e, i) => (
+                            {paginatedData.map((e, i) => (
                                 <motion.div key={e._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="px-4 py-4 flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: e.category === "Vehicle Expense" ? "rgba(8,145,178,0.1)" : "rgba(79,70,229,0.1)" }}>
                                         {e.category === "Vehicle Expense" ? <Truck size={16} style={{ color: "#0891B2" }} /> : <Building2 size={16} style={{ color: "#4F46E5" }} />}
@@ -283,11 +303,22 @@ export default function ExpensesPage() {
                     )}
                 </div>
 
+                {/* Pagination */}
+                {!isLoading && totalPages > 1 && (
+                    <div className="border-t border-gray-100 bg-white">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )}
+
                 {/* Footer */}
                 <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100">
                     <p className="text-xs text-gray-400">
-                        Showing <span className="font-bold text-gray-600">{filtered.length}</span> of{" "}
-                        <span className="font-bold text-gray-600">{expenses.length}</span> expenses
+                        Showing <span className="font-bold text-gray-600">{paginatedData.length}</span> of{" "}
+                        <span className="font-bold text-gray-600">{filtered.length}</span> results
                     </p>
                 </div>
             </motion.div>

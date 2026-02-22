@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Search } from "lucide-react";
 
 interface Option {
     value: string;
@@ -17,6 +17,7 @@ interface CustomDropdownProps {
     label?: string;
     required?: boolean;
     className?: string;
+    searchable?: boolean;
 }
 
 export default function CustomDropdown({
@@ -27,8 +28,10 @@ export default function CustomDropdown({
     label,
     required,
     className = "",
+    searchable = false,
 }: CustomDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
     const ref = useRef<HTMLDivElement>(null);
 
     const selected = options.find((o) => o.value === value);
@@ -38,11 +41,18 @@ export default function CustomDropdown({
         const handler = (e: MouseEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) {
                 setIsOpen(false);
+                setSearchTerm(""); // reset search on close
             }
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    const filteredOptions = useMemo(() => {
+        if (!searchable || !searchTerm) return options;
+        const lowerTerm = searchTerm.toLowerCase();
+        return options.filter(opt => opt.label.toLowerCase().includes(lowerTerm));
+    }, [options, searchable, searchTerm]);
 
     return (
         <div className={`relative ${className}`} ref={ref}>
@@ -91,47 +101,69 @@ export default function CustomDropdown({
                             boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(181,1,4,0.06)",
                         }}
                     >
-                        <div className="p-1.5">
-                            {options.map((option, i) => {
-                                const isSelected = option.value === value;
-                                return (
-                                    <motion.button
-                                        key={option.value}
-                                        type="button"
-                                        initial={{ opacity: 0, x: -6 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: i * 0.04 }}
-                                        onClick={() => {
-                                            onChange(option.value);
-                                            setIsOpen(false);
-                                        }}
-                                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150"
-                                        style={{
-                                            background: isSelected ? "rgba(181,1,4,0.07)" : "transparent",
-                                            color: isSelected ? "#B50104" : "#374151",
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (!isSelected)
-                                                (e.currentTarget as HTMLElement).style.background = "#F9FAFB";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isSelected)
-                                                (e.currentTarget as HTMLElement).style.background = "transparent";
-                                        }}
-                                    >
-                                        <span>{option.label}</span>
-                                        {isSelected && (
-                                            <motion.div
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                        <div className="p-1.5 flex flex-col max-h-64">
+                            {searchable && (
+                                <div className="p-1 border-b border-gray-100 mb-1 sticky top-0 bg-white z-10">
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            placeholder="Search..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-[#B50104] focus:ring-2 focus:ring-red-100 transition-all outline-none"
+                                            onClick={(e) => e.stopPropagation()} // Prevent close
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="overflow-y-auto custom-scrollbar">
+                                {filteredOptions.length === 0 ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500 text-center">No results found</div>
+                                ) : (
+                                    filteredOptions.map((option, i) => {
+                                        const isSelected = option.value === value;
+                                        return (
+                                            <motion.button
+                                                key={option.value}
+                                                type="button"
+                                                initial={{ opacity: 0, x: -6 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: i * 0.04 }}
+                                                onClick={() => {
+                                                    onChange(option.value);
+                                                    setIsOpen(false);
+                                                }}
+                                                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150"
+                                                style={{
+                                                    background: isSelected ? "rgba(181,1,4,0.07)" : "transparent",
+                                                    color: isSelected ? "#B50104" : "#374151",
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (!isSelected)
+                                                        (e.currentTarget as HTMLElement).style.background = "#F9FAFB";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (!isSelected)
+                                                        (e.currentTarget as HTMLElement).style.background = "transparent";
+                                                }}
                                             >
-                                                <Check size={15} style={{ color: "#B50104" }} />
-                                            </motion.div>
-                                        )}
-                                    </motion.button>
-                                );
-                            })}
+                                                <span>{option.label}</span>
+                                                {isSelected && (
+                                                    <motion.div
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                                    >
+                                                        <Check size={15} style={{ color: "#B50104" }} />
+                                                    </motion.div>
+                                                )}
+                                            </motion.button>
+                                        );
+                                    })
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 )}

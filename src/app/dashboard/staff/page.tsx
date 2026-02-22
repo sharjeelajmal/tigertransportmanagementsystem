@@ -21,6 +21,7 @@ import {
 import CustomDropdown from "@/components/CustomDropdown";
 import DeleteModal from "@/components/DeleteModal";
 import Loader from "@/components/Loader";
+import Pagination from "@/components/Pagination";
 
 interface StaffMember {
     _id: string;
@@ -78,6 +79,8 @@ export default function StaffPage() {
     const [designation, setDesignation] = useState("All");
     const [status, setStatus] = useState("All");
     const [showFilters, setShowFilters] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -133,6 +136,16 @@ export default function StaffPage() {
         const matchStatus = status === "All" || s.status === status;
         return matchSearch && matchDes && matchStatus;
     });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, designation, status]);
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginatedData = filtered.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const statsCards = [
         { label: "Total Staff", value: staff.length, icon: Users, sub: "All members" },
@@ -334,22 +347,36 @@ export default function StaffPage() {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-16 text-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader size="md" />
-                                            <p className="text-gray-400 text-sm">Loading staff data...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : filtered.length === 0 ? (
+                                [...Array(5)].map((_, idx) => (
+                                    <tr key={`sk-${idx}`} className="animate-pulse border-b border-gray-50">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-gray-100"></div>
+                                                <div className="space-y-2">
+                                                    <div className="h-4 bg-gray-100 rounded w-24"></div>
+                                                    <div className="h-3 bg-gray-100 rounded w-16"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24"></div></td>
+                                        <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-28"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20"></div></td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-7 bg-gray-100 rounded-lg w-20"></div>
+                                                <div className="h-7 bg-gray-100 rounded-lg w-7"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : paginatedData.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-16 text-center">
                                         <EmptyState onAdd={() => router.push("/dashboard/staff/add")} />
                                     </td>
                                 </tr>
                             ) : (
-                                filtered.map((s, i) => (
+                                paginatedData.map((s, i) => (
                                     <motion.tr
                                         key={s._id}
                                         initial={{ opacity: 0 }}
@@ -403,17 +430,32 @@ export default function StaffPage() {
                 {/* ── Mobile Card List ── */}
                 <div className="md:hidden">
                     {isLoading ? (
-                        <div className="flex flex-col items-center gap-3 py-16">
-                            <Loader size="md" />
-                            <p className="text-gray-400 text-sm">Loading staff data...</p>
+                        <div className="divide-y divide-gray-50">
+                            {[...Array(5)].map((_, idx) => (
+                                <div key={`sk-mob-${idx}`} className="px-4 py-4 flex items-center gap-3 animate-pulse">
+                                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex-shrink-0"></div>
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                        <div className="h-4 bg-gray-100 rounded w-32"></div>
+                                        <div className="h-3 bg-gray-100 rounded w-24"></div>
+                                        <div className="flex gap-2">
+                                            <div className="h-5 bg-gray-100 rounded-full w-16"></div>
+                                            <div className="h-5 bg-gray-100 rounded-full w-16"></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="h-7 bg-gray-100 rounded-lg w-16"></div>
+                                        <div className="h-7 bg-gray-100 rounded-lg w-7"></div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ) : filtered.length === 0 ? (
+                    ) : paginatedData.length === 0 ? (
                         <div className="py-16 flex justify-center">
                             <EmptyState onAdd={() => router.push("/dashboard/staff/add")} />
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-50">
-                            {filtered.map((s, i) => (
+                            {paginatedData.map((s, i) => (
                                 <motion.div
                                     key={s._id}
                                     initial={{ opacity: 0, y: 8 }}
@@ -477,12 +519,25 @@ export default function StaffPage() {
                     )}
                 </div>
 
+                {/* Pagination */}
+                {!isLoading && totalPages > 1 && (
+                    <div className="border-t border-gray-100 bg-white">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )}
+
                 {/* Footer */}
                 <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                     <p className="text-xs text-gray-400">
                         Showing{" "}
-                        <span className="font-bold text-gray-600">{filtered.length}</span> of{" "}
-                        <span className="font-bold text-gray-600">{staff.length}</span> staff members
+                        <span className="font-bold text-gray-600">
+                            {paginatedData.length}
+                        </span>{" "}
+                        of <span className="font-bold text-gray-600">{filtered.length}</span> results
                     </p>
                 </div>
             </motion.div>

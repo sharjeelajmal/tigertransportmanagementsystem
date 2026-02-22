@@ -3,10 +3,20 @@ import dbConnect from '@/lib/db';
 import Expense from '@/models/Expense';
 
 // GET - Fetch all expenses
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         await dbConnect();
-        const expenses = await Expense.find({}).sort({ date: -1, createdAt: -1 }).lean();
+
+        const { searchParams } = new URL(request.url);
+        const month = searchParams.get("month");
+
+        let filterQuery = {};
+        if (month) {
+            // Regex to match dates starting with "YYYY-MM"
+            filterQuery = { date: { $regex: `^${month}` } };
+        }
+
+        const expenses = await Expense.find(filterQuery).sort({ date: -1, createdAt: -1 }).lean();
         return NextResponse.json({ success: true, data: expenses });
     } catch {
         return NextResponse.json(
