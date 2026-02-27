@@ -18,6 +18,7 @@ interface CustomDropdownProps {
     required?: boolean;
     className?: string;
     searchable?: boolean;
+    isLoading?: boolean;
 }
 
 export default function CustomDropdown({
@@ -29,6 +30,7 @@ export default function CustomDropdown({
     required,
     className = "",
     searchable = false,
+    isLoading = false,
 }: CustomDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +61,7 @@ export default function CustomDropdown({
             {label && (
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     {label}
-                    {required && <span className="text-[#B50104] ml-0.5">*</span>}
+                    {required && <span style={{ color: "var(--primary)" }} className="ml-0.5">*</span>}
                 </label>
             )}
 
@@ -70,8 +72,8 @@ export default function CustomDropdown({
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 bg-white text-sm font-medium text-left transition-all duration-200 outline-none"
                 style={{
-                    borderColor: isOpen ? "#B50104" : "#E5E7EB",
-                    boxShadow: isOpen ? "0 0 0 4px rgba(181,1,4,0.07)" : "none",
+                    borderColor: isOpen ? "var(--primary)" : "#E5E7EB",
+                    boxShadow: isOpen ? "0 0 0 4px rgba(var(--primary-rgb, 181,1,4),0.07)" : "none",
                     color: selected ? "#0D0D0D" : "#9CA3AF",
                 }}
             >
@@ -83,7 +85,7 @@ export default function CustomDropdown({
                 >
                     <ChevronDown
                         size={16}
-                        style={{ color: isOpen ? "#B50104" : "#9CA3AF" }}
+                        style={{ color: isOpen ? "var(--primary)" : "#9CA3AF" }}
                     />
                 </motion.div>
             </motion.button>
@@ -98,7 +100,7 @@ export default function CustomDropdown({
                         transition={{ duration: 0.18, ease: "easeOut" }}
                         className="absolute z-50 w-full mt-1.5 bg-white rounded-2xl border border-gray-100 overflow-hidden"
                         style={{
-                            boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(181,1,4,0.06)",
+                            boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.06)",
                         }}
                     >
                         <div className="p-1.5 flex flex-col max-h-64">
@@ -112,14 +114,19 @@ export default function CustomDropdown({
                                             placeholder="Search..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-[#B50104] focus:ring-2 focus:ring-red-100 transition-all outline-none"
+                                            className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition-all outline-none"
                                             onClick={(e) => e.stopPropagation()} // Prevent close
                                         />
                                     </div>
                                 </div>
                             )}
                             <div className="overflow-y-auto custom-scrollbar">
-                                {filteredOptions.length === 0 ? (
+                                {isLoading ? (
+                                    <div className="px-4 py-6 flex flex-col items-center gap-2">
+                                        <div className="w-5 h-5 rounded-full border-2 border-gray-200 animate-spin" style={{ borderTopColor: "var(--primary)" }} />
+                                        <span className="text-xs text-gray-400 font-medium">Loading...</span>
+                                    </div>
+                                ) : filteredOptions.length === 0 ? (
                                     <div className="px-4 py-3 text-sm text-gray-500 text-center">No results found</div>
                                 ) : (
                                     filteredOptions.map((option, i) => {
@@ -137,8 +144,8 @@ export default function CustomDropdown({
                                                 }}
                                                 className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150"
                                                 style={{
-                                                    background: isSelected ? "rgba(181,1,4,0.07)" : "transparent",
-                                                    color: isSelected ? "#B50104" : "#374151",
+                                                    background: isSelected ? "rgba(var(--primary-rgb, 181,1,4),0.07)" : "transparent",
+                                                    color: isSelected ? "var(--primary)" : "#374151",
                                                 }}
                                                 onMouseEnter={(e) => {
                                                     if (!isSelected)
@@ -156,7 +163,7 @@ export default function CustomDropdown({
                                                         animate={{ scale: 1 }}
                                                         transition={{ type: "spring", stiffness: 500, damping: 25 }}
                                                     >
-                                                        <Check size={15} style={{ color: "#B50104" }} />
+                                                        <Check size={15} style={{ color: "var(--primary)" }} />
                                                     </motion.div>
                                                 )}
                                             </motion.button>

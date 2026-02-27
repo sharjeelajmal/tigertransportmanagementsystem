@@ -139,11 +139,11 @@ export default function PayrollPage() {
                 </div>
                 <div className="flex items-center gap-3 self-start sm:self-auto">
                     <motion.button
-                        whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                        whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setIsAddAdvanceOpen(true)}
                         className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                        style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                     >
                         <Plus size={15} />
                         <span className="hidden sm:inline">Add Advance</span>
@@ -166,7 +166,7 @@ export default function PayrollPage() {
                     >
                         <div
                             className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                            style={{ background: "linear-gradient(90deg, #B50104, #E8000A)" }}
+                            style={{ background: "linear-gradient(90deg, var(--primary), var(--primary-light))" }}
                         />
                         <div className="flex items-start justify-between mt-1">
                             <div className="min-w-0">
@@ -184,9 +184,9 @@ export default function PayrollPage() {
                             </div>
                             <div
                                 className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                                style={{ background: "rgba(181,1,4,0.08)" }}
+                                style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}
                             >
-                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "#B50104" }} />
+                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "var(--primary)" }} />
                             </div>
                         </div>
                     </motion.div>
@@ -313,14 +313,14 @@ export default function PayrollPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             {r.status === "Paid" ? (
-                                                <button className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-[#B50104] hover:bg-red-50 transition-colors border border-gray-200 hover:border-red-100 ml-auto">
+                                                <button className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-[var(--primary)] hover:bg-red-50 transition-colors border border-gray-200 hover:border-red-100 ml-auto">
                                                     <FileText size={14} />
                                                     View Receipt
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => router.push(`/dashboard/payroll/${r.id}`)}
-                                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#B50104] bg-red-50 hover:bg-[#B50104] hover:text-white transition-colors border border-red-100 ml-auto"
+                                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--primary)] bg-red-50 hover:bg-[var(--primary)] hover:text-white transition-colors border border-red-100 ml-auto"
                                                 >
                                                     <Plus size={14} />
                                                     Create Payroll
@@ -409,7 +409,7 @@ export default function PayrollPage() {
                                             <button
                                                 onClick={() => router.push(`/dashboard/payroll/${r.id}`)}
                                                 className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white shadow-md w-full"
-                                                style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                                                style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                                             >
                                                 <Plus size={14} />
                                                 Create Payroll

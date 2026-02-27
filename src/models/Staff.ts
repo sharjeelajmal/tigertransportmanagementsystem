@@ -85,5 +85,9 @@ const StaffSchema = new Schema<IStaff>(
     { timestamps: true }
 );
 
+// Indexes for fast queries and sorting
+StaffSchema.index({ createdAt: -1 });
+StaffSchema.index({ designation: 1, status: 1 });
+
 const Staff = models.Staff || mongoose.model<IStaff>('Staff', StaffSchema);
 export default Staff;

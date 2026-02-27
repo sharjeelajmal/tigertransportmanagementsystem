@@ -95,3 +95,35 @@ export async function GET(req: Request) {
         );
     }
 }
+
+export async function POST(req: Request) {
+    try {
+        await connectDB();
+        const body = await req.json();
+
+        const newPayroll = await Payroll.create(body);
+
+        // Mark linked advances as Deducted
+        if (body.advanceIds && body.advanceIds.length > 0) {
+            await Advance.updateMany(
+                { _id: { $in: body.advanceIds } },
+                { $set: { status: "Deducted" } }
+            );
+        }
+
+        return NextResponse.json({ success: true, data: newPayroll }, { status: 201 });
+    } catch (error: any) {
+        console.error("Error creating payroll:", error);
+        // Handle duplicate month error
+        if (error.code === 11000) {
+            return NextResponse.json(
+                { success: false, error: "Payroll already exists for this employee and month" },
+                { status: 400 }
+            );
+        }
+        return NextResponse.json(
+            { success: false, error: "Failed to create payroll" },
+            { status: 500 }
+        );
+    }
+}

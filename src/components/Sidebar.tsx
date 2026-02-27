@@ -18,6 +18,8 @@ import {
     ClipboardList,
     Receipt,
     Wallet,
+    Banknote,
+    Bell,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 
@@ -30,18 +32,14 @@ const navGroups = [
         label: "Management",
         items: [
             { name: "Staff", icon: Users, path: "/dashboard/staff" },
+            { name: "Outsiders", icon: Users, path: "/dashboard/outsiders" },
+            { name: "Allocations", icon: Banknote, path: "/dashboard/outsiders/allocations" },
             { name: "Attendance", icon: ClipboardList, path: "/dashboard/attendance" },
             { name: "Payroll", icon: Wallet, path: "/dashboard/payroll" },
             { name: "Vehicles", icon: Truck, path: "/dashboard/vehicles" },
             { name: "Expenses", icon: Receipt, path: "/dashboard/expenses" },
-            { name: "Routes", icon: MapPin, path: "/dashboard/routes" },
-        ],
-    },
-    {
-        label: "Insights",
-        items: [
-            { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
-            { name: "Reports", icon: FileText, path: "/dashboard/reports" },
+            { name: "Trips", icon: MapPin, path: "/dashboard/trips/add" },
+            { name: "Reminders", icon: Bell, path: "/dashboard/reminders" },
         ],
     },
     {
@@ -51,8 +49,8 @@ const navGroups = [
 ];
 
 const sidebarStyle = {
-    background: "linear-gradient(180deg, #B50104 0%, #8B0003 100%)",
-    boxShadow: "4px 0 24px rgba(181,1,4,0.25)",
+    background: "linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%)",
+    boxShadow: "4px 0 24px rgba(var(--primary-rgb, 181,1,4),0.25)",
 };
 
 function NavContent({
@@ -64,10 +62,11 @@ function NavContent({
 }) {
     const pathname = usePathname();
 
-    const isActive = (path: string) =>
-        path === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname.startsWith(path);
+    const isActive = (path: string) => {
+        if (path === "/dashboard") return pathname === "/dashboard";
+        if (path === "/dashboard/outsiders") return pathname === "/dashboard/outsiders" || (pathname.startsWith("/dashboard/outsiders/") && !pathname.includes("/allocations"));
+        return pathname.startsWith(path);
+    };
 
     return (
         <>
@@ -198,7 +197,7 @@ function NavContent({
                 >
                     <div
                         className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-sm flex-shrink-0"
-                        style={{ color: "#B50104" }}
+                        style={{ color: "var(--primary)" }}
                     >
                         A
                     </div>
@@ -279,7 +278,7 @@ export default function Sidebar() {
                                 className="flex items-center gap-2.5 overflow-hidden"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-md flex-shrink-0">
-                                    <Truck className="w-4 h-4" style={{ color: "#B50104" }} />
+                                    <Truck className="w-4 h-4" style={{ color: "var(--primary)" }} />
                                 </div>
                                 <div className="min-w-0">
                                     <p className="text-white font-extrabold text-sm leading-tight tracking-wide truncate">
@@ -346,7 +345,7 @@ export default function Sidebar() {
                             <div className="flex items-center justify-between px-5 py-5 flex-shrink-0">
                                 <div className="flex items-center gap-2.5">
                                     <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-md">
-                                        <Truck className="w-4 h-4" style={{ color: "#B50104" }} />
+                                        <Truck className="w-4 h-4" style={{ color: "var(--primary)" }} />
                                     </div>
                                     <div>
                                         <p className="text-white font-extrabold text-sm leading-tight">TransportMS</p>

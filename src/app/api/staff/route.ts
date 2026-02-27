@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Staff from '@/models/Staff';
 
-// GET - Fetch all staff
+// GET - Fetch all staff (photo excluded from list to avoid 11MB+ payload)
 export async function GET() {
     try {
         await dbConnect();
         const staff = await Staff.find({}, {
             firstName: 1, lastName: 1, mobile: 1,
-            designation: 1, status: 1, cnic: 1, photo: 1
+            designation: 1, status: 1, cnic: 1
         }).sort({ createdAt: -1 }).lean();
+
         return NextResponse.json({ success: true, data: staff });
     } catch (error) {
         return NextResponse.json(

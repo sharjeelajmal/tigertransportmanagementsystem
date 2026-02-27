@@ -9,13 +9,13 @@ export async function GET(
     try {
         await dbConnect();
         const { id } = await params;
-        const staff = await Staff.findById(id);
+        const staff = await Staff.findById(id).lean();
 
         if (!staff) {
-            return NextResponse.json({ message: 'Staff member not found' }, { status: 404 });
+            return NextResponse.json({ success: false, message: 'Staff member not found' }, { status: 404 });
         }
 
-        return NextResponse.json(staff, { status: 200 });
+        return NextResponse.json({ success: true, data: staff }, { status: 200 });
     } catch (error) {
         console.error('Error fetching staff member:', error);
         return NextResponse.json({ message: 'Error fetching staff member' }, { status: 500 });

@@ -13,6 +13,7 @@ import Loader from "@/components/Loader";
 import DeleteModal from "@/components/DeleteModal";
 import Pagination from "@/components/Pagination";
 import CustomMonthPicker from "@/components/CustomMonthPicker";
+import { useAuth } from "@/context/AuthContext";
 
 interface Expense {
     _id: string;
@@ -40,7 +41,7 @@ const statusOptions = [
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, { bg: string; color: string }> = {
         Paid: { bg: "rgba(5,150,105,0.1)", color: "#059669" },
-        Unpaid: { bg: "rgba(181,1,4,0.08)", color: "#B50104" },
+        Unpaid: { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" },
         "Partial Paid": { bg: "rgba(234,179,8,0.1)", color: "#B45309" },
     };
     const s = map[status] || map["Unpaid"];
@@ -69,6 +70,7 @@ function formatDate(d: string) {
 
 export default function ExpensesPage() {
     const router = useRouter();
+    const { isManager } = useAuth();
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -150,11 +152,11 @@ export default function ExpensesPage() {
                     <p className="text-gray-400 text-xs md:text-sm mt-0.5">{expenses.length} records &bull; Track all company expenses</p>
                 </div>
                 <motion.button
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => router.push("/dashboard/expenses/add")}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                 >
                     <Plus size={15} />
                     <span className="hidden sm:inline">Add Expense</span>
@@ -166,14 +168,14 @@ export default function ExpensesPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {statsCards.map((card, i) => (
                     <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} whileHover={{ y: -3 }} className="bg-white rounded-2xl p-4 md:p-5 border border-gray-100 relative overflow-hidden group cursor-pointer" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
-                        <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: "linear-gradient(90deg, #B50104, #E8000A)" }} />
+                        <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: "linear-gradient(90deg, var(--primary), var(--primary-light))" }} />
                         <div className="flex items-start justify-between mt-1">
                             <div className="min-w-0">
                                 <p className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">{card.label}</p>
                                 <p className="text-xl md:text-2xl font-black text-gray-900 mt-1 leading-none break-all">{isLoading ? <Loader size="sm" /> : card.value}</p>
                             </div>
-                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ background: "rgba(181,1,4,0.08)" }}>
-                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "#B50104" }} />
+                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}>
+                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "var(--primary)" }} />
                             </div>
                         </div>
                     </motion.div>
@@ -186,12 +188,12 @@ export default function ExpensesPage() {
                 <div className="px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-100">
                     <div className="relative flex-1 min-w-0" style={{ minWidth: "140px" }}>
                         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input type="text" placeholder="Search expense or vehicle..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 outline-none transition-all" style={{ borderColor: search ? "#B50104" : "", boxShadow: search ? "0 0 0 3px rgba(181,1,4,0.08)" : "" }} />
+                        <input type="text" placeholder="Search expense or vehicle..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 outline-none transition-all" style={{ borderColor: search ? "var(--primary)" : "", boxShadow: search ? "0 0 0 3px rgba(var(--primary-rgb, 181,1,4),0.08)" : "" }} />
                     </div>
-                    <motion.button whileTap={{ scale: 0.96 }} onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer flex-shrink-0" style={{ background: showFilters ? "rgba(181,1,4,0.06)" : "#F9FAFB", borderColor: showFilters ? "#B50104" : "#E5E7EB", color: showFilters ? "#B50104" : "#6B7280" }}>
+                    <motion.button whileTap={{ scale: 0.96 }} onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer flex-shrink-0" style={{ background: showFilters ? "rgba(var(--primary-rgb, 181,1,4),0.06)" : "#F9FAFB", borderColor: showFilters ? "var(--primary)" : "#E5E7EB", color: showFilters ? "var(--primary)" : "#6B7280" }}>
                         <SlidersHorizontal size={15} />
                         <span className="hidden sm:inline">Filters</span>
-                        {activeFilters && <span className="w-2 h-2 rounded-full bg-[#B50104]" />}
+                        {activeFilters && <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />}
                     </motion.button>
                     <div className="ml-auto text-sm text-gray-400 flex-shrink-0">
                         <span className="font-bold text-gray-700">{filtered.length}</span> results
@@ -212,7 +214,7 @@ export default function ExpensesPage() {
                                         onChange={setMonthFilter}
                                     />
                                 </div>
-                                {activeFilters && (<button onClick={() => { setCategory("All"); setStatus("All"); const d = new Date(); setMonthFilter(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }} className="flex items-center gap-1 text-xs font-semibold text-[#B50104] hover:underline mb-1 cursor-pointer pb-2"><X size={12} /> Clear all</button>)}
+                                {activeFilters && (<button onClick={() => { setCategory("All"); setStatus("All"); const d = new Date(); setMonthFilter(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }} className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer pb-2"><X size={12} /> Clear all</button>)}
                             </div>
                         </motion.div>
                     )}
@@ -236,7 +238,7 @@ export default function ExpensesPage() {
                                     <div className="flex flex-col items-center gap-3">
                                         <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center"><Receipt className="w-7 h-7 text-gray-300" /></div>
                                         <p className="text-gray-400 text-sm font-medium">No expenses found</p>
-                                        <button onClick={() => router.push("/dashboard/expenses/add")} className="text-xs font-bold text-[#B50104] hover:underline cursor-pointer">+ Add first expense</button>
+                                        <button onClick={() => router.push("/dashboard/expenses/add")} className="text-xs font-bold hover:underline cursor-pointer">+ Add first expense</button>
                                     </div>
                                 </td></tr>
                             ) : (
@@ -251,12 +253,14 @@ export default function ExpensesPage() {
                                         <td className="px-5 py-4"><StatusBadge status={e.status} /></td>
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-2">
-                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/expenses/${e._id}`)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer" style={{ background: "linear-gradient(135deg, #B50104, #8B0003)", boxShadow: "0 2px 8px rgba(181,1,4,0.3)" }}>
+                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/expenses/${e._id}`)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.3)" }}>
                                                     <Eye size={12} /> View
                                                 </motion.button>
-                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setDeleteId(e._id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer border-2 border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-500 transition-colors">
-                                                    <Trash2 size={12} />
-                                                </motion.button>
+                                                {!isManager && (
+                                                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setDeleteId(e._id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer border-2 border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-500 transition-colors">
+                                                        <Trash2 size={12} />
+                                                    </motion.button>
+                                                )}
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -274,7 +278,7 @@ export default function ExpensesPage() {
                         <div className="flex flex-col items-center gap-3 py-16">
                             <Receipt className="w-10 h-10 text-gray-200" />
                             <p className="text-gray-400 text-sm font-medium">No expenses found</p>
-                            <button onClick={() => router.push("/dashboard/expenses/add")} className="text-xs font-bold text-[#B50104] hover:underline cursor-pointer">+ Add first expense</button>
+                            <button onClick={() => router.push("/dashboard/expenses/add")} className="text-xs font-bold hover:underline cursor-pointer">+ Add first expense</button>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-50">
@@ -291,10 +295,12 @@ export default function ExpensesPage() {
                                     <div className="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
                                         <p className="text-sm font-black text-gray-900">{e.totalAmount.toLocaleString()}/-</p>
                                         <div className="flex items-center gap-1.5">
-                                            <button onClick={() => router.push(`/dashboard/expenses/${e._id}`)} className="text-xs font-bold cursor-pointer px-2 py-1 rounded-lg text-white" style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}>View</button>
-                                            <button onClick={() => setDeleteId(e._id)} className="w-7 h-7 rounded-lg border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-300 cursor-pointer transition-colors">
-                                                <Trash2 size={12} />
-                                            </button>
+                                            <button onClick={() => router.push(`/dashboard/expenses/${e._id}`)} className="text-xs font-bold cursor-pointer px-2 py-1 rounded-lg text-white" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}>View</button>
+                                            {!isManager && (
+                                                <button onClick={() => setDeleteId(e._id)} className="w-7 h-7 rounded-lg border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-300 cursor-pointer transition-colors">
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>

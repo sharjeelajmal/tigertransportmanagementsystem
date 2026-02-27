@@ -118,10 +118,14 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
                     type="button"
                     key={day}
                     onClick={(e) => { e.preventDefault(); handleDateClick(day); }}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all
-                        ${isSelected ? 'bg-[#B50104] text-white shadow-md' : 'text-gray-700 hover:bg-red-50 hover:text-[#B50104]'}
-                        ${isToday && !isSelected ? 'border border-[#B50104] text-[#B50104]' : ''}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all cursor-pointer
+                        ${isToday && !isSelected ? 'border text-gray-700' : ''}
                     `}
+                    style={{
+                        ...(isSelected ? { background: "var(--primary)", color: "#fff", boxShadow: "0 4px 6px -1px rgba(var(--primary-rgb,181,1,4),0.3)" } : {}),
+                        ...(isToday && !isSelected ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}),
+                        ...(!isSelected && !isToday ? { color: "#374151" } : {}),
+                    }}
                 >
                     {day}
                 </button>
@@ -163,9 +167,10 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
                         type="button"
                         key={m}
                         onClick={() => handleMonthClick(i)}
-                        className={`p-2 rounded-lg text-sm font-medium transition-colors
-                            ${viewDate.getMonth() === i ? 'bg-[#B50104] text-white' : 'hover:bg-gray-100 text-gray-700'}
+                        className={`p-2 rounded-lg text-sm font-medium transition-colors cursor-pointer
+                            ${viewDate.getMonth() === i ? 'text-white' : 'hover:bg-gray-100 text-gray-700'}
                         `}
+                        style={viewDate.getMonth() === i ? { background: "var(--primary)" } : {}}
                     >
                         {m}
                     </button>
@@ -189,9 +194,10 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
                         type="button"
                         key={y}
                         onClick={() => handleYearClick(y)}
-                        className={`p-2 rounded-lg text-sm font-medium transition-colors
-                            ${viewDate.getFullYear() === y ? 'bg-[#B50104] text-white' : 'hover:bg-gray-100 text-gray-700'}
+                        className={`p-2 rounded-lg text-sm font-medium transition-colors cursor-pointer
+                            ${viewDate.getFullYear() === y ? 'text-white' : 'hover:bg-gray-100 text-gray-700'}
                         `}
+                        style={viewDate.getFullYear() === y ? { background: "var(--primary)" } : {}}
                     >
                         {y}
                     </button>
@@ -205,7 +211,7 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
             {label && (
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     {label}
-                    {required && <span className="text-[#B50104] ml-0.5">*</span>}
+                    {required && <span style={{ color: "var(--primary)" }} className="ml-0.5">*</span>}
                 </label>
             )}
 
@@ -213,13 +219,14 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 bg-white text-sm font-medium transition-all duration-200 outline-none
-                    ${isOpen ? 'border-[#B50104] shadow-[0_0_0_4px_rgba(181,1,4,0.07)]' : 'border-gray-200'}
+                    ${isOpen ? 'border-gray-200' : 'border-gray-200'}
                 `}
+                style={isOpen ? { borderColor: "var(--primary)", boxShadow: "0 0 0 4px rgba(var(--primary-rgb,181,1,4),0.07)" } : {}}
             >
                 <span className={selectedDate ? 'text-gray-900' : 'text-gray-400'}>
                     {selectedDate ? formatDate(selectedDate) : 'Select Date'}
                 </span>
-                <CalendarIcon size={16} className={isOpen ? 'text-[#B50104]' : 'text-gray-400'} />
+                <CalendarIcon size={16} style={{ color: isOpen ? "var(--primary)" : "#9CA3AF" }} />
             </button>
 
             <AnimatePresence>
@@ -240,14 +247,16 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
                                 <button
                                     type="button"
                                     onClick={() => setViewMode('months')}
-                                    className={`px-2 py-1 rounded hover:bg-gray-100 transition-colors ${viewMode === 'months' ? 'text-[#B50104]' : ''}`}
+                                    className={`px-2 py-1 rounded hover:bg-gray-100 transition-colors cursor-pointer`}
+                                    style={viewMode === 'months' ? { color: "var(--primary)" } : {}}
                                 >
                                     {viewDate.toLocaleDateString('en-US', { month: 'short' })}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setViewMode('years')}
-                                    className={`px-2 py-1 rounded hover:bg-gray-100 transition-colors ${viewMode === 'years' ? 'text-[#B50104]' : ''}`}
+                                    className={`px-2 py-1 rounded hover:bg-gray-100 transition-colors cursor-pointer`}
+                                    style={viewMode === 'years' ? { color: "var(--primary)" } : {}}
                                 >
                                     {viewDate.getFullYear()}
                                 </button>

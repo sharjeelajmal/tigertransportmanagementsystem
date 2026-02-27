@@ -22,14 +22,16 @@ export default function Loader({ className = '', size = 'md', fullScreen = false
                 className={`${sizes[size]} rounded-full border-4 border-gray-200`}
             />
             <motion.div
-                className={`absolute top-0 left-0 ${sizes[size]} rounded-full border-4 border-transparent border-t-[#B50104]`}
+                className={`absolute top-0 left-0 ${sizes[size]} rounded-full border-4 border-transparent`}
+                style={{ borderTopColor: "var(--primary)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
             {/* Inner dot for extra flair */}
             {size !== 'sm' && (
                 <motion.div
-                    className="absolute bg-[#B50104] rounded-full w-2 h-2"
+                    className="absolute rounded-full w-2 h-2"
+                    style={{ background: "var(--primary)" }}
                     animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                 />

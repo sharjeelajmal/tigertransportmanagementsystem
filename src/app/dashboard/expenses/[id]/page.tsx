@@ -8,6 +8,7 @@ import InfoCard from "@/components/staff/InfoCard";
 import EditModal from "@/components/staff/EditModal";
 import DeleteModal from "@/components/DeleteModal";
 import ProfileHeader from "@/components/staff/ProfileHeader";
+import { useAuth } from "@/context/AuthContext";
 
 interface Expense {
     _id: string;
@@ -55,6 +56,7 @@ export default function ExpenseProfilePage() {
     const router = useRouter();
     const params = useParams();
     const id = params?.id as string;
+    const { isManager } = useAuth();
 
     const [expense, setExpense] = useState<Expense | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -146,12 +148,14 @@ export default function ExpenseProfilePage() {
                     photo={undefined}
                 />
                 {/* Delete button overlayed on header top-right */}
-                <button
-                    onClick={() => setShowDelete(true)}
-                    className="absolute top-6 right-6 md:top-8 md:right-8 z-20 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-red-500/40 transition-all cursor-pointer border border-white/20"
-                >
-                    <Trash2 size={16} />
-                </button>
+                {!isManager && (
+                    <button
+                        onClick={() => setShowDelete(true)}
+                        className="absolute top-6 right-6 md:top-8 md:right-8 z-20 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-red-500/40 transition-all cursor-pointer border border-white/20"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                )}
 
                 {/* Status badge + Amount overlayed bottom-right */}
                 <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-20 flex flex-col items-end gap-2">

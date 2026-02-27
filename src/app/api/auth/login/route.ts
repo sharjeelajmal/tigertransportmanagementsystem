@@ -8,21 +8,32 @@ export async function POST(request: NextRequest) {
 
         const adminUsername = process.env.ADMIN_USERNAME;
         const adminPassword = process.env.ADMIN_PASSWORD;
+        const managerUsername = process.env.MANAGER_USERNAME;
+        const managerPassword = process.env.MANAGER_PASSWORD;
 
-        if (username !== adminUsername || password !== adminPassword) {
+        // Determine role based on credentials
+        let role: 'admin' | 'manager' | null = null;
+
+        if (username === adminUsername && password === adminPassword) {
+            role = 'admin';
+        } else if (username === managerUsername && password === managerPassword) {
+            role = 'manager';
+        }
+
+        if (!role) {
             return NextResponse.json(
                 { message: 'Invalid credentials' },
                 { status: 401 }
             );
         }
 
-        // Create session
+        // Create session with role
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day
-        const session = await encrypt({ username, expires });
+        const session = await encrypt({ username, role, expires });
 
         // Set cookie
         const response = NextResponse.json(
-            { message: 'Login successful' },
+            { message: 'Login successful', role },
             { status: 200 }
         );
 

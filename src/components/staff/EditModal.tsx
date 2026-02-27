@@ -103,7 +103,7 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                                     type={field.type || 'text'}
                                                     value={formData[field.name]}
                                                     onChange={(e) => handleChange(field.name, e.target.value)}
-                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#B50104]/10 focus:border-[#B50104] transition-all disabled:opacity-50"
+                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 focus:border-[var(--primary)] transition-all disabled:opacity-50"
                                                 />
                                             </>
                                         )}
@@ -125,7 +125,7 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                 onClick={handleSave}
                                 disabled={isSaving}
                                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg shadow-red-900/20 hover:shadow-red-900/30 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-                                style={{ background: 'linear-gradient(135deg, #B50104 0%, #DF000C 100%)' }}
+                                style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)' }}
                             >
                                 {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                                 {isSaving ? 'Saving...' : 'Save Changes'}

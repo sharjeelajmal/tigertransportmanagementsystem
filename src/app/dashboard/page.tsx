@@ -21,8 +21,8 @@ const stats = [
         change: "+12.5%",
         up: true,
         icon: DollarSign,
-        color: "#B50104",
-        bg: "rgba(181,1,4,0.08)",
+        color: "var(--primary)",
+        bg: "rgba(var(--primary-rgb, 181,1,4),0.08)",
     },
     {
         title: "Active Vehicles",
@@ -64,7 +64,7 @@ const recentTrips = [
 const statusColors: Record<string, string> = {
     Active: "bg-emerald-50 text-emerald-600 border-emerald-200",
     Completed: "bg-blue-50 text-blue-600 border-blue-200",
-    Delayed: "bg-red-50 text-[#B50104] border-red-200",
+    Delayed: "bg-red-50 text-[var(--primary)] border-red-200",
 };
 
 const containerVariants: Variants = {
@@ -95,7 +95,7 @@ export default function DashboardPage() {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold"
-                    style={{ background: "linear-gradient(135deg, #B50104, #8B0003)", boxShadow: "0 4px 15px rgba(181,1,4,0.3)" }}
+                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", boxShadow: "0 4px 15px rgba(var(--primary-rgb, 181,1,4),0.3)" }}
                 >
                     <Truck size={16} />
                     Add Vehicle
@@ -149,7 +149,7 @@ export default function DashboardPage() {
                             <h3 className="font-bold text-[#0D0D0D]">Recent Trips</h3>
                             <p className="text-xs text-gray-400 mt-0.5">Latest transport activities</p>
                         </div>
-                        <button className="text-xs font-semibold text-[#B50104] flex items-center gap-1 hover:gap-2 transition-all">
+                        <button className="text-xs font-semibold text-[var(--primary)] flex items-center gap-1 hover:gap-2 transition-all">
                             View All <ArrowUpRight size={14} />
                         </button>
                     </div>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                                 className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/70 transition-colors"
                             >
                                 <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                                    style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}>
+                                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}>
                                     {trip.driver.charAt(0)}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -199,7 +199,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="space-y-3">
                             {[
-                                { label: "On Route", count: 28, total: 48, color: "#B50104" },
+                                { label: "On Route", count: 28, total: 48, color: "var(--primary)" },
                                 { label: "Available", count: 14, total: 48, color: "#10B981" },
                                 { label: "Maintenance", count: 6, total: 48, color: "#F59E0B" },
                             ].map((item) => (
@@ -224,7 +224,7 @@ export default function DashboardPage() {
 
                     {/* Revenue Card */}
                     <div className="rounded-2xl p-5 text-white relative overflow-hidden"
-                        style={{ background: "linear-gradient(135deg, #B50104 0%, #8B0003 100%)" }}>
+                        style={{ background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)" }}>
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
                         <div className="relative z-10">

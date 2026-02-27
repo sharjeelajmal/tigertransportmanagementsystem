@@ -20,7 +20,7 @@ const ProfileHeader = ({ firstName, lastName, designation, photo }: ProfileHeade
             style={{ minHeight: '220px' }}
         >
             {/* ── Modern Background Pattern ── */}
-            <div className="absolute inset-0 bg-[#B50104]" />
+            <div className="absolute inset-0" style={{ background: "var(--primary)" }} />
             <div className="absolute inset-0 opacity-30"
                 style={{
                     backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(255,255,255,0.2) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(0,0,0,0.2) 0%, transparent 20%)',

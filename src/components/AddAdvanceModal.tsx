@@ -18,6 +18,7 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
     const [amount, setAmount] = useState("");
     const [reason, setReason] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
     const [employees, setEmployees] = useState<{ label: string, value: string }[]>([]);
 
@@ -28,11 +29,11 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
     }, [isOpen]);
 
     const fetchStaff = async () => {
+        setIsLoadingStaff(true);
         try {
             const res = await fetch("/api/staff");
             const data = await res.json();
             if (data.success) {
-                // Show all staff in the dropdown so nobody is missed
                 setEmployees(data.data.map((s: any) => ({
                     label: `${s.firstName} ${s.lastName}`,
                     value: s._id
@@ -40,6 +41,8 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            setIsLoadingStaff(false);
         }
     };
 
@@ -115,6 +118,7 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
                                     placeholder="Select an employee"
                                     className="w-full"
                                     searchable={true}
+                                    isLoading={isLoadingStaff}
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -135,7 +139,7 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full pl-4 pr-12 py-3 bg-white border-2 border-gray-200 focus:border-[#B50104] rounded-xl text-sm outline-none transition-colors font-medium text-gray-800"
+                                        className="w-full pl-4 pr-12 py-3 bg-white border-2 border-gray-200 focus:border-[var(--primary)] rounded-xl text-sm outline-none transition-colors font-medium text-gray-800"
                                         required
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
@@ -150,7 +154,7 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     placeholder="Enter reason for advance"
-                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-[#B50104] rounded-xl text-sm outline-none transition-colors font-medium text-gray-800"
+                                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 focus:border-[var(--primary)] rounded-xl text-sm outline-none transition-colors font-medium text-gray-800"
                                     required
                                 />
                             </div>
@@ -168,7 +172,8 @@ export default function AddAdvanceModal({ isOpen, onClose, onAdd }: AddAdvanceMo
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !employee || !date || !amount || !reason}
-                                className="bg-[#B50104] hover:bg-[#8B0003] text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                style={{ background: "var(--primary)" }}
                             >
                                 {isSubmitting ? (
                                     <>

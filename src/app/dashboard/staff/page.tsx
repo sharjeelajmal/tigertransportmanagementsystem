@@ -22,6 +22,7 @@ import CustomDropdown from "@/components/CustomDropdown";
 import DeleteModal from "@/components/DeleteModal";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
+import { useAuth } from "@/context/AuthContext";
 
 interface StaffMember {
     _id: string;
@@ -42,6 +43,7 @@ const designationOptions = [
     { value: "Labor", label: "Labor" },
     { value: "Driver", label: "Driver" },
     { value: "Admin", label: "Admin" },
+    { value: "Office Staff", label: "Office Staff" },
 ];
 
 const statusOptions = [
@@ -54,9 +56,10 @@ const avatarColors: Record<string, string> = {
     "Operation Manager": "#4F46E5",
     "Transport Manager": "#0891B2",
     "Warehouse Supervisor": "#D97706",
-    Labor: "#B50104",
+    Labor: "var(--primary)",
     Driver: "#059669",
     Admin: "#7C3AED",
+    "Office Staff": "#6366F1",
 };
 
 const desBadgeStyle = (d: string) => {
@@ -65,14 +68,16 @@ const desBadgeStyle = (d: string) => {
         "Operation Manager": { bg: "rgba(79,70,229,0.1)", color: "#4F46E5" },
         "Transport Manager": { bg: "rgba(8,145,178,0.1)", color: "#0891B2" },
         "Warehouse Supervisor": { bg: "rgba(217,119,6,0.1)", color: "#D97706" },
-        Labor: { bg: "rgba(181,1,4,0.08)", color: "#B50104" },
+        Labor: { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" },
         Admin: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED" },
+        "Office Staff": { bg: "rgba(99,102,241,0.1)", color: "#6366F1" },
     };
-    return map[d] || { bg: "rgba(181,1,4,0.08)", color: "#B50104" };
+    return map[d] || { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" };
 };
 
 export default function StaffPage() {
     const router = useRouter();
+    const { isManager } = useAuth();
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -110,63 +115,42 @@ export default function StaffPage() {
         if (!deleteId) return;
         setIsDeleting(true);
         try {
-            const res = await fetch(`/api/staff/${deleteId}`, {
-                method: 'DELETE',
-            });
-
+            const res = await fetch(`/api/staff/${deleteId}`, { method: 'DELETE' });
             if (res.ok) {
                 setStaff(prev => prev.filter(s => s._id !== deleteId));
                 setDeleteId(null);
-            } else {
-                alert('Failed to delete staff member');
-            }
+            } else { alert('Failed to delete staff member'); }
         } catch (error) {
             console.error('Error deleting staff:', error);
             alert('Error deleting staff member');
-        } finally {
-            setIsDeleting(false);
-        }
+        } finally { setIsDeleting(false); }
     };
 
     const filtered = staff.filter((s) => {
         const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
-        const matchSearch =
-            fullName.includes(search.toLowerCase()) || s.cnic?.includes(search);
+        const matchSearch = fullName.includes(search.toLowerCase()) || s.cnic?.includes(search);
         const matchDes = designation === "All" || s.designation === designation;
         const matchStatus = status === "All" || s.status === status;
         return matchSearch && matchDes && matchStatus;
     });
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [search, designation, status]);
+    useEffect(() => { setCurrentPage(1); }, [search, designation, status]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
-    const paginatedData = filtered.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const statsCards = [
         { label: "Total Staff", value: staff.length, icon: Users, sub: "All members" },
         {
             label: "Office Staff",
-            value: staff.filter((s) => s.designation === "Office Staff").length,
+            value: staff.filter(s =>
+                ["Operation Manager", "Transport Manager", "Warehouse Supervisor", "Admin", "Office Staff"].includes(s.designation)
+            ).length,
             icon: Briefcase,
-            sub: "Active members",
+            sub: "Managers & Admin"
         },
-        {
-            label: "Labor",
-            value: staff.filter((s) => s.designation === "Labor").length,
-            icon: HardHat,
-            sub: "On ground",
-        },
-        {
-            label: "Drivers",
-            value: staff.filter((s) => s.designation === "Driver").length,
-            icon: Truck,
-            sub: "On route",
-        },
+        { label: "Labor", value: staff.filter(s => s.designation === "Labor").length, icon: HardHat, sub: "On ground" },
+        { label: "Drivers", value: staff.filter(s => s.designation === "Driver").length, icon: Truck, sub: "On route" },
     ];
 
     const activeFilters = designation !== "All" || status !== "All";
@@ -184,16 +168,15 @@ export default function StaffPage() {
                         Staff Management
                     </h1>
                     <p className="text-gray-400 text-xs md:text-sm mt-0.5">
-                        {staff.length} members &bull;{" "}
-                        {staff.filter((s) => s.status === "On Duty").length} on duty
+                        {staff.length} members &bull; {staff.filter(s => s.status === "On Duty").length} on duty
                     </p>
                 </div>
                 <motion.button
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => router.push("/dashboard/staff/add")}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                 >
                     <Plus size={15} />
                     <span className="hidden sm:inline">Add Staff</span>
@@ -215,7 +198,7 @@ export default function StaffPage() {
                     >
                         <div
                             className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                            style={{ background: "linear-gradient(90deg, #B50104, #E8000A)" }}
+                            style={{ background: "linear-gradient(90deg, var(--primary), var(--primary-light))" }}
                         />
                         <div className="flex items-start justify-between mt-1">
                             <div className="min-w-0">
@@ -229,9 +212,9 @@ export default function StaffPage() {
                             </div>
                             <div
                                 className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                                style={{ background: "rgba(181,1,4,0.08)" }}
+                                style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}
                             >
-                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "#B50104" }} />
+                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "var(--primary)" }} />
                             </div>
                         </div>
                     </motion.div>
@@ -261,8 +244,8 @@ export default function StaffPage() {
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 outline-none transition-all"
                             style={{
-                                borderColor: search ? "#B50104" : "",
-                                boxShadow: search ? "0 0 0 3px rgba(181,1,4,0.08)" : "",
+                                borderColor: search ? "var(--primary)" : "",
+                                boxShadow: search ? "0 0 0 3px rgba(var(--primary-rgb, 181,1,4),0.08)" : "",
                             }}
                         />
                     </div>
@@ -273,15 +256,15 @@ export default function StaffPage() {
                         onClick={() => setShowFilters(!showFilters)}
                         className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer flex-shrink-0"
                         style={{
-                            background: showFilters ? "rgba(181,1,4,0.06)" : "#F9FAFB",
-                            borderColor: showFilters ? "#B50104" : "#E5E7EB",
-                            color: showFilters ? "#B50104" : "#6B7280",
+                            background: showFilters ? "rgba(var(--primary-rgb, 181,1,4),0.06)" : "#F9FAFB",
+                            borderColor: showFilters ? "var(--primary)" : "#E5E7EB",
+                            color: showFilters ? "var(--primary)" : "#6B7280",
                         }}
                     >
                         <SlidersHorizontal size={15} />
                         <span className="hidden sm:inline">Filters</span>
                         {activeFilters && (
-                            <span className="w-2 h-2 rounded-full bg-[#B50104]" />
+                            <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
                         )}
                     </motion.button>
 
@@ -320,7 +303,7 @@ export default function StaffPage() {
                                             setDesignation("All");
                                             setStatus("All");
                                         }}
-                                        className="flex items-center gap-1 text-xs font-semibold text-[#B50104] hover:underline mb-1 cursor-pointer"
+                                        className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer"
                                     >
                                         <X size={12} /> Clear all
                                     </button>
@@ -404,20 +387,22 @@ export default function StaffPage() {
                                                     onClick={() => router.push(`/dashboard/staff/${s._id}`)}
                                                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer"
                                                     style={{
-                                                        background: "linear-gradient(135deg, #B50104, #8B0003)",
-                                                        boxShadow: "0 2px 8px rgba(181,1,4,0.3)",
+                                                        background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                                                        boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.3)",
                                                     }}
                                                 >
                                                     <Eye size={13} />
                                                     View
                                                 </motion.button>
-                                                <button
-                                                    onClick={() => confirmDelete(s._id)}
-                                                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-                                                    title="Delete Staff"
-                                                >
-                                                    <Trash2 size={15} />
-                                                </button>
+                                                {!isManager && (
+                                                    <button
+                                                        onClick={() => confirmDelete(s._id)}
+                                                        className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                                                        title="Delete Staff"
+                                                    >
+                                                        <Trash2 size={15} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -473,7 +458,7 @@ export default function StaffPage() {
                                     ) : (
                                         <div
                                             className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-                                            style={{ background: avatarColors[s.designation] || "#B50104" }}
+                                            style={{ background: avatarColors[s.designation] || "var(--primary)" }}
                                         >
                                             {s.firstName[0]}
                                             {s.lastName[0]}
@@ -499,19 +484,21 @@ export default function StaffPage() {
                                             onClick={() => router.push(`/dashboard/staff/${s._id}`)}
                                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold flex-shrink-0 cursor-pointer"
                                             style={{
-                                                background: "linear-gradient(135deg, #B50104, #8B0003)",
-                                                boxShadow: "0 2px 8px rgba(181,1,4,0.25)",
+                                                background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                                                boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.25)",
                                             }}
                                         >
                                             <Eye size={12} />
                                             View
                                         </motion.button>
-                                        <button
-                                            onClick={() => confirmDelete(s._id)}
-                                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        {!isManager && (
+                                            <button
+                                                onClick={() => confirmDelete(s._id)}
+                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
                                 </motion.div>
                             ))}
@@ -568,7 +555,7 @@ function StaffAvatar({ s }: { s: StaffMember }) {
             ) : (
                 <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0"
-                    style={{ background: avatarColors[s.designation] || "#B50104" }}
+                    style={{ background: avatarColors[s.designation] || "var(--primary)" }}
                 >
                     {s.firstName[0]}
                     {s.lastName[0]}
@@ -603,10 +590,10 @@ function StatusBadge({ status, small }: { status: string; small?: boolean }) {
             {isOn ? (
                 <CheckCircle2 size={small ? 12 : 15} className="text-emerald-500" />
             ) : (
-                <XCircle size={small ? 12 : 15} className="text-[#B50104]" />
+                <XCircle size={small ? 12 : 15} className="text-[var(--primary)]" />
             )}
             <span
-                className={`font-semibold ${small ? "text-xs" : "text-sm"} ${isOn ? "text-emerald-600" : "text-[#B50104]"
+                className={`font-semibold ${small ? "text-xs" : "text-sm"} ${isOn ? "text-emerald-600" : "text-[var(--primary)]"
                     }`}
             >
                 {status}
@@ -624,7 +611,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
             <p className="text-gray-400 text-sm font-medium">No staff members found</p>
             <button
                 onClick={onAdd}
-                className="text-xs font-bold text-[#B50104] hover:underline cursor-pointer"
+                className="text-xs font-bold hover:underline cursor-pointer"
             >
                 + Add first staff member
             </button>

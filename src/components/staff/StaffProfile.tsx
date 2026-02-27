@@ -26,7 +26,7 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
             const res = await fetch(`/api/staff/${staffId}`);
             if (res.ok) {
                 const data = await res.json();
-                setStaff(data);
+                setStaff(data.data || data);
             } else {
                 console.error('Failed to fetch staff');
             }

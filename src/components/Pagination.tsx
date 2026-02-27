@@ -36,8 +36,8 @@ export default function Pagination({
                 disabled={currentPage === 1}
                 className="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 style={{
-                    background: currentPage === 1 ? "rgba(107,114,128,0.1)" : "rgba(181,1,4,0.08)",
-                    color: currentPage === 1 ? "#6B7280" : "#B50104",
+                    background: currentPage === 1 ? "rgba(107,114,128,0.1)" : "rgba(var(--primary-rgb, 181,1,4),0.08)",
+                    color: currentPage === 1 ? "#6B7280" : "var(--primary)",
                 }}
             >
                 <ChevronLeft size={18} />
@@ -71,9 +71,9 @@ export default function Pagination({
                     style={
                         currentPage === page
                             ? {
-                                background: "linear-gradient(135deg, #B50104, #8B0003)",
+                                background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
                                 color: "#FFFFFF",
-                                boxShadow: "0 4px 12px rgba(181,1,4,0.3)",
+                                boxShadow: "0 4px 12px rgba(var(--primary-rgb, 181,1,4),0.3)",
                             }
                             : {
                                 background: "transparent",
@@ -110,8 +110,8 @@ export default function Pagination({
                 disabled={currentPage === totalPages}
                 className="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 style={{
-                    background: currentPage === totalPages ? "rgba(107,114,128,0.1)" : "rgba(181,1,4,0.08)",
-                    color: currentPage === totalPages ? "#6B7280" : "#B50104",
+                    background: currentPage === totalPages ? "rgba(107,114,128,0.1)" : "rgba(var(--primary-rgb, 181,1,4),0.08)",
+                    color: currentPage === totalPages ? "#6B7280" : "var(--primary)",
                 }}
             >
                 <ChevronRight size={18} />

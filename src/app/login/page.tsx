@@ -76,7 +76,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.7, ease: "easeOut" }}
                 className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden"
             >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#B50104] via-[#8B0003] to-[#0D0D0D]" />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom right, var(--primary), var(--primary-dark), #0D0D0D)" }} />
                 <div
                     className="absolute inset-0 opacity-10"
                     style={{
@@ -88,7 +88,8 @@ export default function LoginPage() {
                 <motion.div
                     animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#B50104] rounded-full blur-[100px]"
+                    className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-[100px]"
+                    style={{ background: "var(--primary)" }}
                 />
                 <motion.div
                     animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
@@ -104,7 +105,7 @@ export default function LoginPage() {
                         className="flex items-center gap-3"
                     >
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                            <Truck className="w-6 h-6 text-[#B50104]" />
+                            <Truck className="w-6 h-6" style={{ color: "var(--primary)" }} />
                         </div>
                         <span className="text-white font-bold text-xl tracking-wide">TransportMS</span>
                     </motion.div>
@@ -169,7 +170,7 @@ export default function LoginPage() {
                 <div className="w-full max-w-md">
                     {/* Mobile logo */}
                     <div className="flex items-center gap-3 mb-8 lg:hidden">
-                        <div className="w-10 h-10 bg-[#B50104] rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
                             <Truck className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-[#0D0D0D] font-bold text-xl">TransportMS</span>
@@ -181,10 +182,10 @@ export default function LoginPage() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ delay: 0.25, duration: 0.5, ease: "easeOut" }}
                         className="bg-white rounded-3xl shadow-2xl overflow-hidden"
-                        style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(181,1,4,0.08)" }}
+                        style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(var(--primary-rgb, 181,1,4),0.08)" }}
                     >
                         {/* Card top accent bar */}
-                        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #B50104, #E8000A, #B50104)" }} />
+                        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary), var(--primary-light), var(--primary))" }} />
 
                         <div className="p-8">
                             {/* Card Header */}
@@ -195,7 +196,7 @@ export default function LoginPage() {
                                 className="mb-8"
                             >
                                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-                                    style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}>
+                                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}>
                                     <Truck className="w-6 h-6 text-white" />
                                 </div>
                                 <h2 className="text-2xl font-black text-[#0D0D0D] tracking-tight">
@@ -223,8 +224,8 @@ export default function LoginPage() {
                                         onBlur={() => setFocusedField(null)}
                                         className="w-full px-4 py-3.5 rounded-xl border-2 text-[#0D0D0D] bg-[#F8F9FA] placeholder-gray-300 text-sm font-medium outline-none transition-all duration-200"
                                         style={{
-                                            borderColor: focusedField === "username" ? "#B50104" : "#EAEAEA",
-                                            boxShadow: focusedField === "username" ? "0 0 0 4px rgba(181,1,4,0.07)" : "none",
+                                            borderColor: focusedField === "username" ? "var(--primary)" : "#EAEAEA",
+                                            boxShadow: focusedField === "username" ? "0 0 0 4px rgba(var(--primary-rgb, 181,1,4),0.07)" : "none",
                                         }}
                                         required
                                     />
@@ -240,7 +241,7 @@ export default function LoginPage() {
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
                                             Password
                                         </label>
-                                        <a href="#" className="text-xs font-semibold text-[#B50104] hover:text-[#8B0003] transition-colors">
+                                        <a href="#" className="text-xs font-semibold transition-colors" style={{ color: "var(--primary)" }}>
                                             Forgot?
                                         </a>
                                     </div>
@@ -254,15 +255,17 @@ export default function LoginPage() {
                                             onBlur={() => setFocusedField(null)}
                                             className="w-full px-4 py-3.5 pr-12 rounded-xl border-2 text-[#0D0D0D] bg-[#F8F9FA] placeholder-gray-300 text-sm font-medium outline-none transition-all duration-200"
                                             style={{
-                                                borderColor: focusedField === "password" ? "#B50104" : "#EAEAEA",
-                                                boxShadow: focusedField === "password" ? "0 0 0 4px rgba(181,1,4,0.07)" : "none",
+                                                borderColor: focusedField === "password" ? "var(--primary)" : "#EAEAEA",
+                                                boxShadow: focusedField === "password" ? "0 0 0 4px rgba(var(--primary-rgb, 181,1,4),0.07)" : "none",
                                             }}
                                             required
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-[#B50104] transition-colors"
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors cursor-pointer"
+                                            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary)')}
+                                            onMouseLeave={(e) => (e.currentTarget.style.color = '#D1D5DB')}
                                         >
                                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                         </button>
@@ -282,7 +285,7 @@ export default function LoginPage() {
                                         type="submit"
                                         disabled={isLoading}
                                         className="relative w-full py-3.5 rounded-xl font-bold text-white text-sm overflow-hidden group"
-                                        style={{ background: "linear-gradient(135deg, #B50104 0%, #8B0003 100%)", boxShadow: "0 6px 20px rgba(181,1,4,0.35)" }}
+                                        style={{ background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)", boxShadow: "0 6px 20px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                                     >
                                         <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                                         <AnimatePresence mode="wait">
@@ -334,21 +337,21 @@ export default function LoginPage() {
                         background: toast.type === "success" ? "#FFFFFF" : "#FFFFFF",
                         boxShadow: toast.type === "success"
                             ? "0 8px 32px rgba(5,150,105,0.2), 0 2px 8px rgba(0,0,0,0.08)"
-                            : "0 8px 32px rgba(181,1,4,0.2), 0 2px 8px rgba(0,0,0,0.08)",
-                        border: toast.type === "success" ? "1.5px solid rgba(5,150,105,0.2)" : "1.5px solid rgba(181,1,4,0.2)",
+                            : `0 8px 32px rgba(var(--primary-rgb, 181,1,4),0.2), 0 2px 8px rgba(0,0,0,0.08)`,
+                        border: toast.type === "success" ? "1.5px solid rgba(5,150,105,0.2)" : `1.5px solid rgba(var(--primary-rgb, 181,1,4),0.2)`,
                     }}
                 >
                     {/* Icon */}
                     <div
                         className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                         style={{
-                            background: toast.type === "success" ? "rgba(5,150,105,0.1)" : "rgba(181,1,4,0.08)",
+                            background: toast.type === "success" ? "rgba(5,150,105,0.1)" : "rgba(var(--primary-rgb, 181,1,4),0.08)",
                         }}
                     >
                         {toast.type === "success" ? (
                             <CheckCircle2 size={18} className="text-emerald-600" />
                         ) : (
-                            <XCircle size={18} style={{ color: "#B50104" }} />
+                            <XCircle size={18} style={{ color: "var(--primary)" }} />
                         )}
                     </div>
 
@@ -365,7 +368,7 @@ export default function LoginPage() {
                         animate={{ width: "0%" }}
                         transition={{ duration: 4, ease: "linear" }}
                         style={{
-                            background: toast.type === "success" ? "#059669" : "#B50104",
+                            background: toast.type === "success" ? "#059669" : "var(--primary)",
                         }}
                     />
                 </motion.div>

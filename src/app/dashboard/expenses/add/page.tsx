@@ -47,7 +47,7 @@ const statusOptions = [
 type Category = "Vehicle Expense" | "Office Expense";
 
 const inputCls =
-    "w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all focus:border-[#B50104] focus:shadow-[0_0_0_4px_rgba(181,1,4,0.07)]";
+    "w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all focus:border-[var(--primary)] focus:shadow-[0_0_0_4px_rgba(var(--primary-rgb, 181,1,4),0.07)]";
 
 export default function AddExpensePage() {
     const router = useRouter();
@@ -153,7 +153,7 @@ export default function AddExpensePage() {
             >
                 <button
                     onClick={() => router.back()}
-                    className="w-9 h-9 rounded-xl bg-white border-2 border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#B50104] hover:text-[#B50104] transition-all cursor-pointer flex-shrink-0"
+                    className="w-9 h-9 rounded-xl bg-white border-2 border-gray-200 flex items-center justify-center text-gray-500 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer flex-shrink-0"
                     style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
                 >
                     <ArrowLeft size={17} />
@@ -304,10 +304,10 @@ export default function AddExpensePage() {
                     <motion.button
                         type="submit"
                         disabled={isSaving}
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                        whileHover={{ scale: 1.02, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                         whileTap={{ scale: 0.98 }}
                         className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold shadow-lg disabled:opacity-60 cursor-pointer"
-                        style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                     >
                         {isSaving ? (
                             <><Loader size="sm" /> Saving...</>

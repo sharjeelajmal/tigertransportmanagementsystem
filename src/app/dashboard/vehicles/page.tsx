@@ -20,6 +20,7 @@ import CustomDropdown from "@/components/CustomDropdown";
 import Loader from "@/components/Loader";
 import DeleteModal from "@/components/DeleteModal";
 import Pagination from "@/components/Pagination";
+import { useAuth } from "@/context/AuthContext";
 
 interface Vehicle {
     _id: string;
@@ -62,7 +63,7 @@ const statusBadgeStyle = (status: string) => {
         case "On Route":
             return { bg: "rgba(8,145,178,0.1)", color: "#0891B2" }; // Cyan
         case "Under Maintenance":
-            return { bg: "rgba(181,1,4,0.08)", color: "#B50104" }; // Red
+            return { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" }; // Red
         case "Out of Service":
             return { bg: "rgba(107,114,128,0.1)", color: "#6B7280" }; // Gray
         default:
@@ -72,6 +73,7 @@ const statusBadgeStyle = (status: string) => {
 
 export default function VehiclePage() {
     const router = useRouter();
+    const { isManager } = useAuth();
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [stats, setStats] = useState<Stats>({
         totalVehicles: 0,
@@ -192,11 +194,11 @@ export default function VehiclePage() {
                     </p>
                 </div>
                 <motion.button
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => router.push("/dashboard/vehicles/add")}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                 >
                     <Plus size={15} />
                     <span className="hidden sm:inline">Add Vehicle</span>
@@ -218,7 +220,7 @@ export default function VehiclePage() {
                     >
                         <div
                             className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                            style={{ background: "linear-gradient(90deg, #B50104, #E8000A)" }}
+                            style={{ background: "linear-gradient(90deg, var(--primary), var(--primary-light))" }}
                         />
                         <div className="flex items-start justify-between mt-1">
                             <div className="min-w-0">
@@ -232,9 +234,9 @@ export default function VehiclePage() {
                             </div>
                             <div
                                 className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                                style={{ background: "rgba(181,1,4,0.08)" }}
+                                style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}
                             >
-                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "#B50104" }} />
+                                <card.icon className="w-4 h-4 md:w-5 md:h-5" style={{ color: "var(--primary)" }} />
                             </div>
                         </div>
                     </motion.div>
@@ -264,8 +266,8 @@ export default function VehiclePage() {
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 outline-none transition-all"
                             style={{
-                                borderColor: search ? "#B50104" : "",
-                                boxShadow: search ? "0 0 0 3px rgba(181,1,4,0.08)" : "",
+                                borderColor: search ? "var(--primary)" : "",
+                                boxShadow: search ? "0 0 0 3px rgba(var(--primary-rgb, 181,1,4),0.08)" : "",
                             }}
                         />
                     </div>
@@ -276,15 +278,15 @@ export default function VehiclePage() {
                         onClick={() => setShowFilters(!showFilters)}
                         className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer flex-shrink-0"
                         style={{
-                            background: showFilters ? "rgba(181,1,4,0.06)" : "#F9FAFB",
-                            borderColor: showFilters ? "#B50104" : "#E5E7EB",
-                            color: showFilters ? "#B50104" : "#6B7280",
+                            background: showFilters ? "rgba(var(--primary-rgb, 181,1,4),0.06)" : "#F9FAFB",
+                            borderColor: showFilters ? "var(--primary)" : "#E5E7EB",
+                            color: showFilters ? "var(--primary)" : "#6B7280",
                         }}
                     >
                         <SlidersHorizontal size={15} />
                         <span className="hidden sm:inline">Filters</span>
                         {activeFilters && (
-                            <span className="w-2 h-2 rounded-full bg-[#B50104]" />
+                            <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
                         )}
                     </motion.button>
 
@@ -323,7 +325,7 @@ export default function VehiclePage() {
                                             setFilterModelYear("All");
                                             setFilterStatus("All");
                                         }}
-                                        className="flex items-center gap-1 text-xs font-semibold text-[#B50104] hover:underline mb-1 cursor-pointer"
+                                        className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer"
                                     >
                                         <X size={12} /> Clear all
                                     </button>
@@ -420,20 +422,22 @@ export default function VehiclePage() {
                                                         onClick={() => router.push(`/dashboard/vehicles/${v._id}`)}
                                                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer"
                                                         style={{
-                                                            background: "linear-gradient(135deg, #B50104, #8B0003)",
-                                                            boxShadow: "0 2px 8px rgba(181,1,4,0.3)",
+                                                            background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                                                            boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.3)",
                                                         }}
                                                     >
                                                         <Eye size={13} />
                                                         View
                                                     </motion.button>
-                                                    <button
-                                                        onClick={() => confirmDelete(v._id)}
-                                                        className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-                                                        title="Delete Vehicle"
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
+                                                    {!isManager && (
+                                                        <button
+                                                            onClick={() => confirmDelete(v._id)}
+                                                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                                                            title="Delete Vehicle"
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </motion.tr>
@@ -488,7 +492,7 @@ export default function VehiclePage() {
                                         {/* Icon */}
                                         <div
                                             className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-black flex-shrink-0"
-                                            style={{ background: "#B50104" }}
+                                            style={{ background: "var(--primary)" }}
                                         >
                                             <Truck size={20} />
                                         </div>
@@ -519,19 +523,21 @@ export default function VehiclePage() {
                                                 onClick={() => router.push(`/dashboard/vehicles/${v._id}`)}
                                                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold flex-shrink-0 cursor-pointer"
                                                 style={{
-                                                    background: "linear-gradient(135deg, #B50104, #8B0003)",
-                                                    boxShadow: "0 2px 8px rgba(181,1,4,0.25)",
+                                                    background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                                                    boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.25)",
                                                 }}
                                             >
                                                 <Eye size={12} />
                                                 View
                                             </motion.button>
-                                            <button
-                                                onClick={() => confirmDelete(v._id)}
-                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {!isManager && (
+                                                <button
+                                                    onClick={() => confirmDelete(v._id)}
+                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </motion.div>
                                 );

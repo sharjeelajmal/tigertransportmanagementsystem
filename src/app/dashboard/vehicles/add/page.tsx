@@ -83,7 +83,7 @@ export default function AddVehiclePage() {
     };
 
     const inputClass =
-        "w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all duration-200 focus:border-[#B50104] focus:shadow-[0_0_0_4px_rgba(181,1,4,0.07)]";
+        "w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all duration-200 focus:border-[var(--primary)] focus:shadow-[0_0_0_4px_rgba(var(--primary-rgb, 181,1,4),0.07)]";
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -97,7 +97,7 @@ export default function AddVehiclePage() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => router.back()}
-                    className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#B50104] hover:text-[#B50104] transition-all cursor-pointer"
+                    className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-500 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer"
                 >
                     <ArrowLeft size={18} />
                 </motion.button>
@@ -119,8 +119,8 @@ export default function AddVehiclePage() {
                 >
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ background: "rgba(181,1,4,0.08)" }}>
-                            <Truck size={16} style={{ color: "#B50104" }} />
+                            style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}>
+                            <Truck size={16} style={{ color: "var(--primary)" }} />
                         </div>
                         <h2 className="font-bold text-gray-800">Basic Vehicle Information</h2>
                     </div>
@@ -128,13 +128,13 @@ export default function AddVehiclePage() {
                     <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                Vehicle Name <span className="text-[#B50104]">*</span>
+                                Vehicle Name <span className="text-[var(--primary)]">*</span>
                             </label>
                             <input className={inputClass} placeholder="e.g. Toyota Hilux" value={form.vehicleName} onChange={set("vehicleName")} required />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                Vehicle Plate Number <span className="text-[#B50104]">*</span>
+                                Vehicle Plate Number <span className="text-[var(--primary)]">*</span>
                             </label>
                             <input className={inputClass} placeholder="ABC-123" value={form.plateNumber} onChange={set("plateNumber")} required />
                         </div>
@@ -152,7 +152,7 @@ export default function AddVehiclePage() {
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                Model Year <span className="text-[#B50104]">*</span>
+                                Model Year <span className="text-[var(--primary)]">*</span>
                             </label>
                             <input type="number" className={inputClass} placeholder="2024" value={form.modelYear} onChange={set("modelYear")} required />
                         </div>
@@ -170,8 +170,8 @@ export default function AddVehiclePage() {
                 >
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ background: "rgba(181,1,4,0.08)" }}>
-                            <User size={16} style={{ color: "#B50104" }} />
+                            style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}>
+                            <User size={16} style={{ color: "var(--primary)" }} />
                         </div>
                         <h2 className="font-bold text-gray-800">Ownership & Assignment</h2>
                     </div>
@@ -197,8 +197,8 @@ export default function AddVehiclePage() {
                 >
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ background: "rgba(181,1,4,0.08)" }}>
-                            <FileText size={16} style={{ color: "#B50104" }} />
+                            style={{ background: "rgba(var(--primary-rgb, 181,1,4),0.08)" }}>
+                            <FileText size={16} style={{ color: "var(--primary)" }} />
                         </div>
                         <h2 className="font-bold text-gray-800">Document Expiry</h2>
                     </div>
@@ -264,10 +264,10 @@ export default function AddVehiclePage() {
                     <motion.button
                         type="submit"
                         disabled={isLoading}
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                        whileHover={{ scale: 1.02, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                         whileTap={{ scale: 0.98 }}
                         className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-                        style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                     >
                         {isLoading ? (
                             <>

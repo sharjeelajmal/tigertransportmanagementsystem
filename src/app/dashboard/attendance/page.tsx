@@ -27,7 +27,7 @@ interface AttendanceRecord {
 const avatarColors: Record<string, string> = {
     "Office Staff": "#4F46E5",
     Driver: "#0891B2",
-    Labor: "#B50104",
+    Labor: "var(--primary)",
     Supervisor: "#D97706",
     Mechanic: "#059669",
     "Security Guard": "#7C3AED",
@@ -45,7 +45,7 @@ const desBadge = (d: string) => {
         Cleaner: { bg: "rgba(219,39,119,0.1)", color: "#DB2777" },
         Accountant: { bg: "rgba(3,105,161,0.1)", color: "#0369A1" },
     };
-    return map[d] || { bg: "rgba(181,1,4,0.08)", color: "#B50104" };
+    return map[d] || { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" };
 };
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -172,7 +172,7 @@ export default function AttendancePage() {
                 {[
                     { label: "Total Staff", value: total, icon: Users, color: "#6366F1", bg: "rgba(99,102,241,0.08)" },
                     { label: "Present", value: presentCount, icon: UserCheck, color: "#059669", bg: "rgba(5,150,105,0.08)" },
-                    { label: "Absent", value: absentCount, icon: UserX, color: "#B50104", bg: "rgba(181,1,4,0.08)" },
+                    { label: "Absent", value: absentCount, icon: UserX, color: "var(--primary)", bg: "rgba(var(--primary-rgb, 181,1,4),0.08)" },
                 ].map((card, i) => (
                     <motion.div
                         key={card.label}
@@ -248,7 +248,7 @@ export default function AttendancePage() {
                             </button>
                             <button
                                 onClick={() => markAll("Absent")}
-                                className="text-xs font-bold px-3 py-1.5 rounded-lg text-[#B50104] bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
+                                className="text-xs font-bold px-3 py-1.5 rounded-lg text-[var(--primary)] bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
                             >
                                 All Absent
                             </button>
@@ -317,7 +317,7 @@ export default function AttendancePage() {
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0"
-                                                    style={{ background: avatarColors[r.designation] || "#B50104" }}
+                                                    style={{ background: avatarColors[r.designation] || "var(--primary)" }}
                                                 >
                                                     {r.firstName[0]}{r.lastName[0]}
                                                 </div>
@@ -351,9 +351,9 @@ export default function AttendancePage() {
                                                     onClick={() => toggle(r.staffId)}
                                                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer"
                                                     style={{
-                                                        background: r.status === "Present" ? "rgba(5,150,105,0.1)" : "rgba(181,1,4,0.08)",
-                                                        color: r.status === "Present" ? "#059669" : "#B50104",
-                                                        border: `1.5px solid ${r.status === "Present" ? "rgba(5,150,105,0.2)" : "rgba(181,1,4,0.15)"}`,
+                                                        background: r.status === "Present" ? "rgba(5,150,105,0.1)" : "rgba(var(--primary-rgb, 181,1,4),0.08)",
+                                                        color: r.status === "Present" ? "#059669" : "var(--primary)",
+                                                        border: `1.5px solid ${r.status === "Present" ? "rgba(5,150,105,0.2)" : "rgba(var(--primary-rgb, 181,1,4),0.15)"}`,
                                                     }}
                                                 >
                                                     <AnimatePresence mode="wait">
@@ -427,7 +427,7 @@ export default function AttendancePage() {
                                     </span>
                                     <div
                                         className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0"
-                                        style={{ background: avatarColors[r.designation] || "#B50104" }}
+                                        style={{ background: avatarColors[r.designation] || "var(--primary)" }}
                                     >
                                         {r.firstName[0]}{r.lastName[0]}
                                     </div>
@@ -450,9 +450,9 @@ export default function AttendancePage() {
                                         onClick={() => toggle(r.staffId)}
                                         className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer transition-all"
                                         style={{
-                                            background: r.status === "Present" ? "rgba(5,150,105,0.1)" : "rgba(181,1,4,0.08)",
-                                            color: r.status === "Present" ? "#059669" : "#B50104",
-                                            border: `1.5px solid ${r.status === "Present" ? "rgba(5,150,105,0.2)" : "rgba(181,1,4,0.15)"}`,
+                                            background: r.status === "Present" ? "rgba(5,150,105,0.1)" : "rgba(var(--primary-rgb, 181,1,4),0.08)",
+                                            color: r.status === "Present" ? "#059669" : "var(--primary)",
+                                            border: `1.5px solid ${r.status === "Present" ? "rgba(5,150,105,0.2)" : "rgba(var(--primary-rgb, 181,1,4),0.15)"}`,
                                         }}
                                     >
                                         {r.status === "Present" ? (
@@ -484,17 +484,17 @@ export default function AttendancePage() {
                         <p className="text-xs text-gray-400">
                             <span className="font-bold text-emerald-600">{presentCount} Present</span>
                             {" · "}
-                            <span className="font-bold text-[#B50104]">{absentCount} Absent</span>
+                            <span className="font-bold text-[var(--primary)]">{absentCount} Absent</span>
                             {" · "}
                             {total} Total
                         </p>
                         <motion.button
-                            whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(181,1,4,0.35)" }}
+                            whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                             whileTap={{ scale: 0.97 }}
                             onClick={handleSave}
                             disabled={isSaving}
                             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg disabled:opacity-60 cursor-pointer"
-                            style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                         >
                             {isSaving ? (
                                 <><Loader size="sm" className="mr-2" /> Saving...</>
@@ -518,16 +518,16 @@ export default function AttendancePage() {
                         className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3.5 rounded-2xl shadow-2xl"
                         style={{
                             background: "#fff",
-                            border: `1.5px solid ${toast.type === "success" ? "rgba(5,150,105,0.2)" : "rgba(181,1,4,0.2)"}`,
+                            border: `1.5px solid ${toast.type === "success" ? "rgba(5,150,105,0.2)" : "rgba(var(--primary-rgb, 181,1,4),0.2)"}`,
                             boxShadow: toast.type === "success"
                                 ? "0 8px 32px rgba(5,150,105,0.2)"
-                                : "0 8px 32px rgba(181,1,4,0.2)",
+                                : "0 8px 32px rgba(var(--primary-rgb, 181,1,4),0.2)",
                         }}
                     >
                         {toast.type === "success" ? (
                             <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
                         ) : (
-                            <XCircle size={18} style={{ color: "#B50104" }} className="flex-shrink-0" />
+                            <XCircle size={18} style={{ color: "var(--primary)" }} className="flex-shrink-0" />
                         )}
                         <p className="text-sm font-semibold text-gray-800">{toast.message}</p>
                         <motion.div
@@ -535,7 +535,7 @@ export default function AttendancePage() {
                             initial={{ width: "100%" }}
                             animate={{ width: "0%" }}
                             transition={{ duration: 3.5, ease: "linear" }}
-                            style={{ background: toast.type === "success" ? "#059669" : "#B50104" }}
+                            style={{ background: toast.type === "success" ? "#059669" : "var(--primary)" }}
                         />
                     </motion.div>
                 )}

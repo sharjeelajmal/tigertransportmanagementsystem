@@ -1,11 +1,65 @@
-"use client";
-
-import { Bell, Search, Menu, ChevronDown } from "lucide-react";
-import { motion } from "framer-motion";
+import { Bell, Search, Menu, ChevronDown, Clock, Calendar as CalendarIcon, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/context/SidebarContext";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+
+interface Reminder {
+    _id: string;
+    details: string;
+    reminderDate: string;
+    reminderTime: string;
+    isCompleted: boolean;
+}
 
 export default function Header() {
     const { setMobileOpen } = useSidebar();
+    const [reminders, setReminders] = useState<Reminder[]>([]);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowNotifications(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            const res = await fetch("/api/reminders?filter=approaching");
+            const data = await res.json();
+            if (data.success) {
+                setReminders(data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+        }
+    };
+
+    const getDaysLeft = (dateStr: string) => {
+        const reminderDate = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        reminderDate.setHours(0, 0, 0, 0);
+
+        const diffTime = reminderDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return "Today";
+        if (diffDays === 1) return "Tomorrow";
+        if (diffDays < 0) return "Overdue";
+        return `${diffDays} days left`;
+    };
 
     return (
         <motion.header
@@ -33,7 +87,7 @@ export default function Header() {
                     <input
                         type="text"
                         placeholder="Search anything..."
-                        className="pl-10 pr-4 py-2.5 w-72 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#B50104] focus:ring-2 focus:ring-[#B50104]/10 transition-all"
+                        className="pl-10 pr-4 py-2.5 w-72 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition-all"
                     />
                 </div>
             </div>
@@ -41,14 +95,83 @@ export default function Header() {
             {/* Right */}
             <div className="flex items-center gap-3">
                 {/* Notification Bell */}
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-500 transition-all border border-gray-200"
-                >
-                    <Bell className="w-4 h-4" />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-[#B50104] rounded-full ring-2 ring-white" />
-                </motion.button>
+                <div className="relative" ref={dropdownRef}>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-500 transition-all border border-gray-200 cursor-pointer"
+                    >
+                        <Bell className="w-4 h-4" />
+                        {reminders.length > 0 && (
+                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white" style={{ background: "var(--primary)" }} />
+                        )}
+                    </motion.button>
+
+                    <AnimatePresence>
+                        {showNotifications && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute right-0 mt-2 w-[320px] bg-white rounded-2xl border border-gray-100 shadow-2xl z-50 overflow-hidden"
+                            >
+                                <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Reminders</h3>
+                                    <span className="px-2 py-0.5 bg-[var(--primary)] text-white text-[10px] font-black rounded-lg">
+                                        {reminders.length} New
+                                    </span>
+                                </div>
+                                <div className="max-h-[350px] overflow-y-auto">
+                                    {reminders.length === 0 ? (
+                                        <div className="p-8 text-center opacity-30">
+                                            <Bell className="mx-auto mb-2" size={32} />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">No approaching reminders</p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-gray-50">
+                                            {reminders.map((r) => (
+                                                <Link
+                                                    key={r._id}
+                                                    href="/dashboard/reminders"
+                                                    onClick={() => setShowNotifications(false)}
+                                                    className="block p-4 hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0 text-[var(--primary)]">
+                                                            <AlertCircle size={16} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-[11px] font-bold text-gray-800 line-clamp-2 leading-tight mb-1">
+                                                                {r.details}
+                                                            </p>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                                                                    <Clock size={10} />
+                                                                    {r.reminderTime}
+                                                                </div>
+                                                                <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-amber-50 text-amber-500 rounded-md">
+                                                                    {getDaysLeft(r.reminderDate)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <Link
+                                    href="/dashboard/reminders"
+                                    onClick={() => setShowNotifications(false)}
+                                    className="block py-3 text-center text-[10px] font-black uppercase tracking-widest bg-gray-50 text-gray-400 hover:text-[var(--primary)] transition-colors border-t border-gray-100"
+                                >
+                                    View All Reminders
+                                </Link>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
                 <div className="w-px h-6 bg-gray-200" />
 
@@ -60,7 +183,7 @@ export default function Header() {
                 >
                     <div
                         className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-                        style={{ background: "linear-gradient(135deg, #B50104, #8B0003)" }}
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                     >
                         A
                     </div>
