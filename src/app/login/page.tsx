@@ -314,8 +314,7 @@ export default function LoginPage() {
                                 transition={{ delay: 0.65 }}
                                 className="mt-6 pt-5 border-t border-gray-100 flex items-center justify-center gap-2"
                             >
-                                <Shield className="w-3.5 h-3.5 text-gray-300" />
-                                <span className="text-xs text-gray-400">256-bit SSL Encrypted & Secure</span>
+                                <span className="text-xs text-gray-400">© 2025 Aura Business Solution | All rights reserved</span>
                             </motion.div>
                         </div>
                     </motion.div>

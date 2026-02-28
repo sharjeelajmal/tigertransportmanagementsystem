@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Calendar, ChevronLeft } from "lucide-react";
 import Image from "next/image";
+import PayrollSlipPreview, { handleSlipPrint } from "@/components/payroll/PayrollSlipPreview";
 
 interface StaffDetails {
     _id: string;
@@ -49,6 +50,22 @@ export default function PayrollForm({
     const advanceDeduction = initialAdvanceDeduction;
     const [fine, setFine] = useState(0);
     const [otherDeductions, setOtherDeductions] = useState(0);
+
+    // Auto-calculate absent days from attendance records
+    useEffect(() => {
+        const fetchAbsents = async () => {
+            try {
+                const res = await fetch(`/api/attendance/monthly?staffId=${staffId}&month=${month}`);
+                const data = await res.json();
+                if (data.success) {
+                    setAbsentDays(data.data.absent || 0);
+                }
+            } catch (error) {
+                console.error('Error fetching monthly attendance:', error);
+            }
+        };
+        if (staffId && month) fetchAbsents();
+    }, [staffId, month]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -109,126 +126,50 @@ export default function PayrollForm({
         return `${months[parseInt(mo) - 1]} ${y}`;
     };
 
-    /* ── Payroll Slip Print ── */
     const handlePrint = () => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-
-        const slipHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-<title>Payroll Slip - ${staff.firstName} ${staff.lastName}</title>
-<style>
-    @page { size: A4; margin: 15mm; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; background: #fff; }
-    .slip { max-width: 700px; margin: 0 auto; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-    .logo-area { display: flex; align-items: center; gap: 0; }
-    .logo-area img { height: 55px; }
-    .slip-title { text-align: right; }
-    .slip-title h1 { font-size: 28px; font-weight: 900; color: #222; margin: 0; }
-    .slip-title .month { font-size: 13px; color: #666; margin-top: 2px; }
-    .contact-bar { display: flex; align-items: center; gap: 16px; background: var(--primary); color: #fff; padding: 7px 16px; border-radius: 6px; font-size: 11px; margin-bottom: 24px; }
-    .contact-bar span { display: flex; align-items: center; gap: 5px; }
-    .emp-info { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 0 4px; }
-    .emp-info div { font-size: 13px; }
-    .emp-info strong { font-weight: 700; color: #111; }
-    .tables-row { display: flex; gap: 20px; margin-bottom: 20px; }
-    .tables-row .tbl { flex: 1; }
-    .tbl table { width: 100%; border-collapse: collapse; }
-    .tbl .tbl-head { background: #f5f5f5; font-weight: 700; font-size: 13px; padding: 8px 12px; border-bottom: 2px solid #ddd; }
-    .tbl .tbl-head td:last-child { text-align: right; }
-    .tbl td { padding: 7px 12px; font-size: 12px; border-bottom: 1px solid #eee; }
-    .tbl td:last-child { text-align: right; font-weight: 600; }
-    .totals { margin-top: 0; }
-    .totals table { width: 50%; border-collapse: collapse; }
-    .totals td { padding: 8px 12px; font-size: 13px; font-weight: 700; border-bottom: 1px solid #ddd; }
-    .totals td:last-child { text-align: right; }
-    .totals .earning-row { background: #f0fdf4; color: #15803d; }
-    .totals .deduction-row { background: #fef2f2; color: #b91c1c; }
-    .print-date { text-align: right; font-size: 11px; color: #999; margin-top: 20px; }
-    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style>
-</head>
-<body>
-<div class="slip">
-    <div class="header">
-        <div class="logo-area">
-            <img src="/Images/logo.jpg" alt="Tiger Transports" />
-        </div>
-        <div class="slip-title">
-            <h1>Payroll Slip</h1>
-            <div class="month">${formatMonth(month)}</div>
-        </div>
-    </div>
-    <div class="contact-bar">
-        <span>📞 +92 300 9280276</span>
-        <span>📍 PLOT NO. W2/142, NORTH WEST INDUSTRIAL ZONE NEAR PSO PUMP, PORT QASIM</span>
-    </div>
-    <div class="emp-info">
-        <div><strong>Employee Name:</strong> ${staff.firstName} ${staff.lastName}</div>
-        <div><strong>Designation:</strong> ${staff.designation}</div>
-        <div><strong>Employee ID:</strong> E-${staffId.slice(-3).toUpperCase()}</div>
-    </div>
-    <div class="tables-row">
-        <div class="tbl">
-            <table>
-                <tr class="tbl-head"><td>Earning</td><td>Amount</td></tr>
-                <tr><td>Basic Salary</td><td>${basicSalary.toLocaleString()}</td></tr>
-                <tr><td>Overtime</td><td>${calcOvertimeEarning.toLocaleString()}</td></tr>
-                <tr><td>Bonus</td><td>${bonus.toLocaleString()}</td></tr>
-                <tr><td>Allowance</td><td>${allowance.toLocaleString()}</td></tr>
-                <tr><td>Others</td><td>${otherEarnings.toLocaleString()}</td></tr>
-            </table>
-        </div>
-        <div class="tbl">
-            <table>
-                <tr class="tbl-head"><td>Deduction</td><td>Amount</td></tr>
-                <tr><td>Absent Days</td><td>${calcAbsentPenalty.toLocaleString()}</td></tr>
-                <tr><td>Advance</td><td>${advanceDeduction.toLocaleString()}</td></tr>
-                <tr><td>Fine</td><td>${fine.toLocaleString()}</td></tr>
-                <tr><td>Others</td><td>${otherDeductions.toLocaleString()}</td></tr>
-            </table>
-        </div>
-    </div>
-    <div class="totals">
-        <table>
-            <tr class="earning-row"><td>Total Earning</td><td>${totalEarnings.toLocaleString()}/-</td></tr>
-            <tr class="deduction-row"><td>Total Deduction</td><td>${totalDeductions.toLocaleString()}/-</td></tr>
-        </table>
-    </div>
-    <div class="print-date">Print Date: ${new Date().toLocaleDateString('en-GB')}</div>
-</div>
-<script>window.onload = function() { window.print(); }</script>
-</body>
-</html>`;
-
-        printWindow.document.write(slipHTML);
-        printWindow.document.close();
+        handleSlipPrint({
+            staffFirstName: staff.firstName,
+            staffLastName: staff.lastName,
+            staffDesignation: staff.designation,
+            staffId,
+            month,
+            basicSalary,
+            calcOvertimeEarning,
+            bonus,
+            allowance,
+            otherEarnings,
+            calcAbsentPenalty,
+            advanceDeduction,
+            fine,
+            otherDeductions,
+            totalEarnings,
+            totalDeductions,
+        });
     };
 
-    /* ── Payroll Slip Modal ── */
     if (showSlip && staff) {
+        const slipData = {
+            staffFirstName: staff.firstName,
+            staffLastName: staff.lastName,
+            staffDesignation: staff.designation,
+            staffId,
+            month,
+            basicSalary,
+            calcOvertimeEarning,
+            bonus,
+            allowance,
+            otherEarnings,
+            calcAbsentPenalty,
+            advanceDeduction,
+            fine,
+            otherDeductions,
+            totalEarnings,
+            totalDeductions,
+        };
         return (
             <div className="max-w-7xl mx-auto pb-12">
                 <PayrollSlipPreview
-                    staff={staff}
-                    staffId={staffId}
-                    month={month}
-                    formatMonth={formatMonth}
-                    basicSalary={basicSalary}
-                    calcOvertimeEarning={calcOvertimeEarning}
-                    bonus={bonus}
-                    allowance={allowance}
-                    otherEarnings={otherEarnings}
-                    calcAbsentPenalty={calcAbsentPenalty}
-                    advanceDeduction={advanceDeduction}
-                    fine={fine}
-                    otherDeductions={otherDeductions}
-                    totalEarnings={totalEarnings}
-                    totalDeductions={totalDeductions}
+                    data={slipData}
                     onPrint={handlePrint}
                     onBack={() => router.push('/dashboard/payroll')}
                 />
@@ -436,129 +377,6 @@ function InputField({ label, value, onChange, readOnly, bgGray, suffix }: {
             {suffix && (
                 <span className="absolute right-4 top-1/2 translate-y-0.5 text-xs font-bold text-gray-400">{suffix}</span>
             )}
-        </div>
-    );
-}
-
-/* ── Payroll Slip Preview Component ── */
-function PayrollSlipPreview({ staff, staffId, month, formatMonth, basicSalary, calcOvertimeEarning, bonus, allowance, otherEarnings, calcAbsentPenalty, advanceDeduction, fine, otherDeductions, totalEarnings, totalDeductions, onPrint, onBack }: {
-    staff: StaffDetails;
-    staffId: string;
-    month: string;
-    formatMonth: (m: string) => string;
-    basicSalary: number;
-    calcOvertimeEarning: number;
-    bonus: number;
-    allowance: number;
-    otherEarnings: number;
-    calcAbsentPenalty: number;
-    advanceDeduction: number;
-    fine: number;
-    otherDeductions: number;
-    totalEarnings: number;
-    totalDeductions: number;
-    onPrint: () => void;
-    onBack: () => void;
-}) {
-    const netSalary = totalEarnings - totalDeductions;
-
-    return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {/* Action bar */}
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-gray-800">Payroll Slip Preview</h2>
-                <div className="flex gap-3">
-                    <button onClick={onPrint} className="bg-[var(--primary)]  text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-red-100 transition-all cursor-pointer">
-                        🖨️ Print Slip
-                    </button>
-                    <button onClick={onBack} className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all cursor-pointer">
-                        Back to Payroll
-                    </button>
-                </div>
-            </div>
-
-            {/* Slip Card */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden max-w-[700px] mx-auto">
-                {/* Header */}
-                <div className="px-8 pt-6 pb-2 flex justify-between items-start">
-                    <div className="flex items-center">
-                        <Image src="/Images/logo.jpg" alt="Tiger Transports" width={120} height={55} className="object-contain" />
-                    </div>
-                    <div className="text-right">
-                        <h1 className="text-2xl font-black text-gray-800">Payroll Slip</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">{formatMonth(month)}</p>
-                    </div>
-                </div>
-
-                {/* Contact Bar */}
-                <div className="mx-6 mb-5 flex items-center gap-4 bg-[var(--primary)] text-white px-4 py-2 rounded-md text-[11px]">
-                    <span>📞 +92 300 9280276</span>
-                    <span>📍 PLOT NO. W2/142, NORTH WEST INDUSTRIAL ZONE NEAR PSO PUMP, PORT QASIM</span>
-                </div>
-
-                {/* Employee Info */}
-                <div className="px-8 pb-4 flex justify-between text-sm">
-                    <div><strong className="text-gray-700">Employee Name:</strong> <span className="text-gray-500">{staff.firstName} {staff.lastName}</span></div>
-                    <div><strong className="text-gray-700">Designation:</strong> <span className="text-gray-500">{staff.designation}</span></div>
-                    <div><strong className="text-gray-700">Employee ID:</strong> <span className="text-gray-500">E-{staffId.slice(-3).toUpperCase()}</span></div>
-                </div>
-
-                {/* Tables */}
-                <div className="px-8 pb-4 flex gap-5">
-                    {/* Earnings */}
-                    <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="flex justify-between bg-gray-50 px-3 py-2 border-b border-gray-200 text-xs font-bold text-gray-700">
-                            <span>Earning</span><span>Amount</span>
-                        </div>
-                        <SlipRow label="Basic Salary" value={basicSalary} />
-                        <SlipRow label="Overtime" value={calcOvertimeEarning} />
-                        <SlipRow label="Bonus" value={bonus} />
-                        <SlipRow label="Allowance" value={allowance} />
-                        <SlipRow label="Others" value={otherEarnings} />
-                    </div>
-                    {/* Deductions */}
-                    <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="flex justify-between bg-gray-50 px-3 py-2 border-b border-gray-200 text-xs font-bold text-gray-700">
-                            <span>Deduction</span><span>Amount</span>
-                        </div>
-                        <SlipRow label="Absent Days" value={calcAbsentPenalty} />
-                        <SlipRow label="Advance" value={advanceDeduction} />
-                        <SlipRow label="Fine" value={fine} />
-                        <SlipRow label="Others" value={otherDeductions} />
-                    </div>
-                </div>
-
-                {/* Totals */}
-                <div className="px-8 pb-2">
-                    <div className="w-1/2 border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="flex justify-between px-3 py-2 bg-green-50 text-green-700 text-xs font-bold border-b border-gray-200">
-                            <span>Total Earning</span><span>{totalEarnings.toLocaleString()}/-</span>
-                        </div>
-                        <div className="flex justify-between px-3 py-2 bg-red-50 text-red-700 text-xs font-bold">
-                            <span>Total Deduction</span><span>{totalDeductions.toLocaleString()}/-</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Net & Print Date */}
-                <div className="px-8 py-4 flex justify-between items-end border-t border-gray-100 mt-2">
-                    <div>
-                        <span className="text-xs text-gray-400">Net Salary</span>
-                        <p className="text-2xl font-black text-[var(--primary)]">{netSalary.toLocaleString()}/-</p>
-                    </div>
-                    <p className="text-[11px] text-gray-400">Print Date: {new Date().toLocaleDateString('en-GB')}</p>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
-
-/* ── Slip Table Row ── */
-function SlipRow({ label, value }: { label: string; value: number }) {
-    return (
-        <div className="flex justify-between px-3 py-1.5 text-xs text-gray-600 border-b border-gray-50">
-            <span>{label}</span>
-            <span className="font-semibold">{value.toLocaleString()}</span>
         </div>
     );
 }

@@ -1,25 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import ProfileHeader from './ProfileHeader';
 import InfoCard from './InfoCard';
 import EditModal from './EditModal';
 import Loader from '@/components/Loader';
 import { IStaff } from '@/models/Staff';
-import { useRouter } from 'next/navigation';
 
 interface StaffProfileProps {
     staffId: string;
 }
 
 const StaffProfile = ({ staffId }: StaffProfileProps) => {
-    const router = useRouter();
     const [staff, setStaff] = useState<IStaff | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editSection, setEditSection] = useState<string>('');
     const [editFields, setEditFields] = useState<any[]>([]);
+    const [attendanceStatus, setAttendanceStatus] = useState<string>('Not Marked');
 
     const fetchStaff = async () => {
         try {
@@ -27,8 +26,6 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
             if (res.ok) {
                 const data = await res.json();
                 setStaff(data.data || data);
-            } else {
-                console.error('Failed to fetch staff');
             }
         } catch (error) {
             console.error('Error fetching staff:', error);
@@ -37,8 +34,25 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
         }
     };
 
+    const fetchAttendance = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const res = await fetch(`/api/attendance?date=${today}`);
+            const data = await res.json();
+            if (data.success && data.data?.records) {
+                const record = data.data.records.find(
+                    (r: any) => r.staffId === staffId
+                );
+                setAttendanceStatus(record ? record.status : 'Not Marked');
+            }
+        } catch (error) {
+            console.error('Error fetching attendance:', error);
+        }
+    };
+
     useEffect(() => {
         fetchStaff();
+        fetchAttendance();
     }, [staffId]);
 
     const handleEdit = (section: string) => {
@@ -81,25 +95,17 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedData),
             });
-
             if (res.ok) {
-                await fetchStaff(); // Refresh data
+                await fetchStaff();
                 setIsEditModalOpen(false);
-            } else {
-                console.error('Failed to update staff');
             }
         } catch (error) {
             console.error('Error updating staff:', error);
         }
     };
 
-    if (loading) {
-        return <Loader fullScreen />;
-    }
-
-    if (!staff) {
-        return <div className="text-center text-red-500">Staff member not found.</div>;
-    }
+    if (loading) return <Loader fullScreen />;
+    if (!staff) return <div className="text-center text-red-500">Staff member not found.</div>;
 
     const formatDate = (dateString?: Date) => {
         if (!dateString) return '-';
@@ -108,7 +114,6 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
 
     return (
         <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto relative">
-
             <ProfileHeader
                 firstName={staff.firstName}
                 lastName={staff.lastName}
@@ -117,7 +122,6 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Personal Information */}
                 <InfoCard
                     title="Personal Information"
                     columns={2}
@@ -131,8 +135,6 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
                         { label: 'Guarantor Contact', value: staff.guarantorContact || '-' },
                     ]}
                 />
-
-                {/* Contact Information */}
                 <InfoCard
                     title="Contact Information"
                     columns={1}
@@ -146,13 +148,7 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
                 />
             </div>
 
-            {/* Employment Details */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="w-full"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="w-full">
                 <InfoCard
                     title="Employment Details"
                     columns={2}
@@ -161,17 +157,12 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
                     items={[
                         { label: 'Designation', value: staff.designation },
                         { label: 'Status', value: staff.status },
+                        { label: 'Today\'s Attendance', value: attendanceStatus },
                     ]}
                 />
             </motion.div>
 
-            {/* Payroll Structure */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="w-full"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="w-full">
                 <InfoCard
                     title="Payroll Structure"
                     columns={1}
@@ -190,7 +181,6 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
                 onClose={() => setIsEditModalOpen(false)}
                 onSave={handleSave}
             />
-
         </div>
     );
 };

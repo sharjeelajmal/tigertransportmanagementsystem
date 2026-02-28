@@ -313,7 +313,10 @@ export default function PayrollPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             {r.status === "Paid" ? (
-                                                <button className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-[var(--primary)] hover:bg-red-50 transition-colors border border-gray-200 hover:border-red-100 ml-auto">
+                                                <button
+                                                    onClick={() => router.push(`/dashboard/payroll/${r.id}?view=receipt`)}
+                                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-[var(--primary)] hover:bg-red-50 transition-colors border border-gray-200 hover:border-red-100 ml-auto cursor-pointer"
+                                                >
                                                     <FileText size={14} />
                                                     View Receipt
                                                 </button>
@@ -401,7 +404,10 @@ export default function PayrollPage() {
                                     </div>
                                     <div className="flex justify-end mt-1">
                                         {r.status === "Paid" ? (
-                                            <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-gray-500 hover:text-[var(--primary)] hover:bg-red-50 transition-colors border border-gray-200 hover:border-red-100 w-full">
+                                            <button
+                                                onClick={() => router.push(`/dashboard/payroll/${r.id}?view=receipt`)}
+                                                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-gray-500 hover:text-[var(--primary)] hover:bg-red-50 transition-colors border border-gray-200 hover:border-red-100 w-full cursor-pointer"
+                                            >
                                                 <FileText size={14} />
                                                 View Receipt
                                             </button>

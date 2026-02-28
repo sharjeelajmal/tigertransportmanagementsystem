@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface VehicleDetailsSectionProps {
     form: any;
     setForm: any;
+    showAddLabor?: boolean;
 }
 
 const inputCls = "w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-[var(--primary)] font-semibold text-gray-700 transition-colors placeholder:text-gray-400";
 
-export default function VehicleDetailsSection({ form, setForm }: VehicleDetailsSectionProps) {
+export default function VehicleDetailsSection({ form, setForm, showAddLabor = false }: VehicleDetailsSectionProps) {
     const vehicles = form.vehicles || [];
 
     const addVehicle = () => {
@@ -105,13 +106,15 @@ export default function VehicleDetailsSection({ form, setForm }: VehicleDetailsS
                         >
                             <Plus size={14} /> Add More
                         </button>
-                        <button
-                            type="button"
-                            onClick={toggleLabor}
-                            className="bg-[var(--primary)] text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all flex items-center gap-1 cursor-pointer"
-                        >
-                            <Plus size={14} /> Add Labor
-                        </button>
+                        {showAddLabor && (
+                            <button
+                                type="button"
+                                onClick={toggleLabor}
+                                className="bg-[var(--primary)] text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                                <Plus size={14} /> Add Labor
+                            </button>
+                        )}
                     </div>
 
                     {/* Optional Labor Section */}

@@ -45,6 +45,27 @@ const statusColor = (s: string) => {
     return 'text-red-500 bg-red-50';
 };
 
+// 100% Bulletproof QTY Function for this page
+const getQtyDisplay = (a: Allocation) => {
+    const cat = (a.outsider?.category || '').toLowerCase().trim();
+    const isLabor = cat.includes('labor');
+    const isVehicle = cat.includes('vehicle');
+    const isBoth = cat.includes('both');
+
+    const lQty = a.laborQty || 0;
+    const lStr = `L-${String(lQty).padStart(2, '0')}`;
+    const vQty = a.vehicleQty || 0;
+    const vStr = `V-${String(vQty).padStart(2, '0')}`;
+
+    // Agar strictly labor hai toh V- hide kar do
+    if (isLabor && !isBoth) return lStr;
+    // Agar strictly vehicle hai toh L- hide kar do
+    if (isVehicle && !isBoth) return vStr;
+
+    // Default / Both
+    return `${vStr}, ${lStr}`;
+};
+
 export default function OutsiderAllocationPage() {
     const router = useRouter();
     const { isManager } = useAuth();
@@ -153,7 +174,7 @@ export default function OutsiderAllocationPage() {
 
             {/* Main Table Card */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-                className="bg-white rounded-2xl md:rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50">
+                className="bg-white rounded-2xl md:rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
 
                 {/* Filters */}
                 <div className="px-4 md:px-6 py-4 md:py-6 border-b border-gray-50 space-y-3 relative z-30">
@@ -209,8 +230,11 @@ export default function OutsiderAllocationPage() {
                                         <td className="px-4 lg:px-6 py-4"><span className="text-sm font-medium text-gray-400">{a.outsider?.category === 'Vehicle Outsider' ? 'Vehicle' : a.outsider?.category === 'Labor Outsider' ? 'Labor' : a.outsider?.category || '-'}</span></td>
                                         <td className="px-4 lg:px-6 py-4"><span className="text-sm font-medium text-gray-400">{a.customerName || '-'}</span></td>
                                         <td className="px-4 lg:px-6 py-4"><span className="text-sm font-medium text-gray-400">{new Date(a.allocationDate).toLocaleDateString('en-GB')}</span></td>
-                                        <td className="px-4 lg:px-6 py-4"><span className="text-sm font-medium text-gray-400">V-{String(a.vehicleQty || 0).padStart(2, '0')}, L-{String(a.laborQty || 0).padStart(2, '0')}</span></td>
-                                        <td className="px-4 lg:px-6 py-4"><span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusColor(a.paymentStatus)}`}>{a.paymentStatus}</span></td>
+
+                                        {/* YAHAN HUMNE FUNCTION CALL KIYA HAI */}
+                                        <td className="px-4 lg:px-6 py-4"><span className="text-sm font-bold text-gray-800">{getQtyDisplay(a)}</span></td>
+
+                                        <td className="px-4 lg:px-6 py-4"><span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${statusColor(a.paymentStatus)}`}>{a.paymentStatus}</span></td>
                                         <td className="px-4 lg:px-6 py-4 text-right">
                                             <div className="flex items-center gap-2 justify-end">
                                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/outsiders/allocations/${a._id}`)}
@@ -257,7 +281,9 @@ export default function OutsiderAllocationPage() {
                                 <div className="grid grid-cols-3 gap-2 text-[11px]">
                                     <div><span className="text-gray-400 block">Category</span><span className="font-semibold text-gray-700">{a.outsider?.category === 'Vehicle Outsider' ? 'Vehicle' : 'Labor'}</span></div>
                                     <div><span className="text-gray-400 block">Date</span><span className="font-semibold text-gray-700">{new Date(a.allocationDate).toLocaleDateString('en-GB')}</span></div>
-                                    <div><span className="text-gray-400 block">Qty</span><span className="font-semibold text-gray-700">V-{a.vehicleQty || 0}, L-{a.laborQty || 0}</span></div>
+
+                                    {/* YAHAN BHI FUNCTION CALL KIYA HAI */}
+                                    <div><span className="text-gray-400 block">Qty</span><span className="font-bold text-gray-800">{getQtyDisplay(a)}</span></div>
                                 </div>
                                 <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
                                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/outsiders/allocations/${a._id}`)}
@@ -274,10 +300,12 @@ export default function OutsiderAllocationPage() {
                     )}
                 </div>
 
-                {/* Pagination */}
-                <div className="px-4 md:px-6 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-50">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Page {currentPage} of {totalPages || 1}</p>
+                {/* Centered Pagination */}
+                <div className="px-4 md:px-6 py-5 bg-gray-50 flex flex-col items-center justify-center w-full border-t border-gray-100 gap-3">
                     {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
+                        Page {currentPage} of {totalPages || 1}
+                    </p>
                 </div>
             </motion.div>
 

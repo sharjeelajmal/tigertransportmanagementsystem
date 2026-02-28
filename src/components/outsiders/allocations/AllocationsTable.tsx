@@ -13,6 +13,7 @@ interface Allocation {
     allocationDate: string;
     vehicleQty: number;
     laborQty: number;
+    vehicles?: { vehicleName: string; vehicleNo: string; driverName: string }[];
     paymentStatus: string;
 }
 
@@ -31,6 +32,48 @@ const statusColor = (s: string) => {
     if (s === 'Partial Paid') return 'text-sky-500 bg-sky-50';
     return 'text-red-500 bg-red-50';
 };
+
+// 100% Bulletproof QTY Function
+function getQtyDisplay(a: Allocation) {
+    // 1. Safe category fetch with lowercasing and trimming
+    const cat = (a.outsider?.category || '').toLowerCase().trim();
+
+    // 2. Boolean checks using 'includes' to avoid exact match failures
+    const isLabor = cat.includes('labor');
+    const isVehicle = cat.includes('vehicle');
+    const isBoth = cat.includes('both');
+
+    const lQty = a.laborQty || 0;
+    const lStr = `L-${String(lQty).padStart(2, '0')}`;
+
+    // 3. Real vehicle data check
+    const hasRealVehicleData = a.vehicles && a.vehicles.length > 0 && !!a.vehicles[0]?.vehicleName;
+
+    // 4. Strict Labor condition: If category is labor OR (labor exist but no vehicle name typed)
+    if ((isLabor && !isBoth) || (!hasRealVehicleData && lQty > 0)) {
+        return lStr; // Returns ONLY L-xx (Completely hides V-)
+    }
+
+    const vQty = hasRealVehicleData ? (a.vehicleQty || a.vehicles!.length) : (a.vehicleQty || 0);
+    const vStr = `V-${String(vQty).padStart(2, '0')}`;
+
+    // 5. Strict Vehicle condition
+    if ((isVehicle && !isBoth) || (hasRealVehicleData && lQty === 0)) {
+        return vStr; // Returns ONLY V-xx (Completely hides L-)
+    }
+
+    // 6. Fallback for 'Both' or corrupted data
+    return `${vStr}, ${lStr}`;
+}
+
+function getCategoryLabel(cat: string) {
+    if (!cat) return '-';
+    const lower = cat.toLowerCase();
+    if (lower.includes('vehicle')) return 'Vehicle';
+    if (lower.includes('labor')) return 'Labor';
+    if (lower.includes('both')) return 'Both';
+    return cat;
+}
 
 export default function AllocationsTable({
     isLoading, paginated, currentPage, totalPages, itemsPerPage, setCurrentPage, confirmDelete
@@ -71,12 +114,15 @@ export default function AllocationsTable({
                                 <motion.tr key={a._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-[#FFF8F8] group transition-all">
                                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-xs font-medium text-gray-400">{String((currentPage - 1) * itemsPerPage + i + 1).padStart(2, '0')}</span></td>
                                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-semibold text-gray-700">{a.outsider?.outsiderName || '-'}</span></td>
-                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-gray-400">{a.outsider?.category === 'Vehicle Outsider' ? 'Vehicle' : a.outsider?.category === 'Labor Outsider' ? 'Labor' : a.outsider?.category || '-'}</span></td>
+                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-gray-400">{getCategoryLabel(a.outsider?.category)}</span></td>
                                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-gray-400">{a.customerName || '-'}</span></td>
                                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-gray-400">{new Date(a.allocationDate).toLocaleDateString('en-GB')}</span></td>
-                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-gray-400">V-{String(a.vehicleQty || 0).padStart(2, '0')}, L-{String(a.laborQty || 0).padStart(2, '0')}</span></td>
+
+                                    {/* Updated QTY Column */}
+                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-gray-800">{getQtyDisplay(a)}</span></td>
+
                                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusColor(a.paymentStatus)}`}>{a.paymentStatus}</span>
+                                        <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full ${statusColor(a.paymentStatus)}`}>{a.paymentStatus}</span>
                                     </td>
                                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-right">
                                         <div className="flex items-center gap-2 justify-end">
@@ -126,9 +172,9 @@ export default function AllocationsTable({
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor(a.paymentStatus)}`}>{a.paymentStatus}</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-[11px]">
-                                <div><span className="text-gray-400 block">Category</span><span className="font-semibold text-gray-700">{a.outsider?.category === 'Vehicle Outsider' ? 'Vehicle' : a.outsider?.category === 'Labor Outsider' ? 'Labor' : '-'}</span></div>
+                                <div><span className="text-gray-400 block">Category</span><span className="font-semibold text-gray-700">{getCategoryLabel(a.outsider?.category)}</span></div>
                                 <div><span className="text-gray-400 block">Date</span><span className="font-semibold text-gray-700">{new Date(a.allocationDate).toLocaleDateString('en-GB')}</span></div>
-                                <div><span className="text-gray-400 block">Qty</span><span className="font-semibold text-gray-700">V-{a.vehicleQty || 0}, L-{a.laborQty || 0}</span></div>
+                                <div><span className="text-gray-400 block">Qty</span><span className="font-bold text-gray-900">{getQtyDisplay(a)}</span></div>
                             </div>
                             <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
                                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/outsiders/allocations/${a._id}`)}
@@ -147,10 +193,16 @@ export default function AllocationsTable({
                 )}
             </div>
 
-            {/* Pagination */}
-            <div className="px-4 md:px-6 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-50">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Page {currentPage} of {totalPages || 1}</p>
-                {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
+            {/* Completely Centered Pagination Footer */}
+            <div className="px-4 py-5 bg-gray-50 flex flex-col items-center justify-center w-full border-t border-gray-100">
+                {totalPages > 1 && (
+                    <div className="flex justify-center w-full mb-3">
+                        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                    </div>
+                )}
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
+                    Page {currentPage} of {totalPages || 1}
+                </p>
             </div>
         </div>
     );

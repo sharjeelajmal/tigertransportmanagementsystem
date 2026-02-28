@@ -6,6 +6,7 @@ import { CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CustomDropdown from '@/components/CustomDropdown';
 import CustomDatePicker from '@/components/CustomDatePicker';
+import CustomTimePicker from '@/components/CustomTimePicker';
 
 const tripTypeOptions = [
     { value: 'Inbound', label: 'Inbound' },
@@ -29,7 +30,7 @@ export default function AddTripPage() {
     const [staff, setStaff] = useState<any[]>([]);
 
     const [form, setForm] = useState({
-        tripType: '', date: '',
+        tripType: '', date: '', time: '',
         customerName: '', contactNo: '', emergencyContactNo: '', customerRemarks: '',
         cargoNo: '', cargoType: '', cargoWeight: '', cargoRemarks: '',
         pickupLocation: '',
@@ -51,7 +52,23 @@ export default function AddTripPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        setTimeout(() => { setIsSubmitting(false); router.back(); }, 1000);
+        try {
+            const res = await fetch('/api/trips', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form),
+            });
+            const data = await res.json();
+            if (data.success) {
+                router.back();
+            } else {
+                alert(data.error || 'Failed to add trip');
+            }
+        } catch {
+            alert('Error adding trip');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const set = (key: string, val: string) => setForm(prev => ({ ...prev, [key]: val }));
@@ -68,13 +85,13 @@ export default function AddTripPage() {
                 {/* ── 1. Trip Details ── */}
                 <div className="p-4 md:p-8 flex flex-col md:flex-row gap-4 md:gap-8">
                     <p className="text-sm font-black text-gray-800 md:w-48 flex-shrink-0 pt-1">Trip Details</p>
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ overflow: 'visible' }}>
                         <div className="space-y-1.5">
                             <label className="block text-xs font-bold text-gray-500">Trip Type</label>
                             <CustomDropdown options={tripTypeOptions} value={form.tripType} onChange={(v) => set('tripType', v)} placeholder="Select Trip Type" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-500">Date & Time</label>
+                            <label className="block text-xs font-bold text-gray-500">Date</label>
                             <CustomDatePicker value={form.date} onChange={(date) => {
                                 if (date) {
                                     const yyyy = date.getFullYear();
@@ -83,6 +100,10 @@ export default function AddTripPage() {
                                     set('date', `${yyyy}-${mm}-${dd}`);
                                 }
                             }} />
+                        </div>
+                        <div className="space-y-1.5 relative z-[100]">
+                            <label className="block text-xs font-bold text-gray-500">Time</label>
+                            <CustomTimePicker value={form.time} onChange={(t) => set('time', t)} placeholder="Select Time" />
                         </div>
                     </div>
                 </div>

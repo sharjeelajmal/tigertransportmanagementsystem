@@ -14,11 +14,12 @@ import {
     Plus,
     CheckCircle2,
     XCircle,
-    MoreHorizontal,
+    MinusCircle,
     X,
     Trash2,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
+import CustomDatePicker from "@/components/CustomDatePicker";
 import DeleteModal from "@/components/DeleteModal";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
@@ -49,7 +50,8 @@ const designationOptions = [
 const statusOptions = [
     { value: "All", label: "All Statuses" },
     { value: "On Duty", label: "On Duty" },
-    { value: "Off Duty", label: "Off Duty" },
+    { value: "Absent", label: "Absent" },
+    { value: "Not Marked", label: "Not Marked" },
 ];
 
 const avatarColors: Record<string, string> = {
@@ -90,9 +92,17 @@ export default function StaffPage() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Attendance date + map
+    const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+    const [attendanceMap, setAttendanceMap] = useState<Record<string, string>>({});
+
     useEffect(() => {
         fetchStaff();
     }, []);
+
+    useEffect(() => {
+        if (staff.length > 0) fetchAttendance();
+    }, [attendanceDate, staff.length]);
 
     const fetchStaff = async () => {
         setIsLoading(true);
@@ -107,9 +117,27 @@ export default function StaffPage() {
         }
     };
 
-    const confirmDelete = (id: string) => {
-        setDeleteId(id);
+    const fetchAttendance = async () => {
+        try {
+            const res = await fetch(`/api/attendance?date=${attendanceDate}`);
+            const data = await res.json();
+            const map: Record<string, string> = {};
+            if (data.success && data.data?.records) {
+                data.data.records.forEach((r: any) => {
+                    map[r.staffId] = r.status === "Present" ? "On Duty" : "Absent";
+                });
+            }
+            setAttendanceMap(map);
+        } catch {
+            console.error("Failed to fetch attendance");
+        }
     };
+
+    const getAttendanceStatus = (staffId: string) => {
+        return attendanceMap[staffId] || "Not Marked";
+    };
+
+    const confirmDelete = (id: string) => { setDeleteId(id); };
 
     const handleDelete = async () => {
         if (!deleteId) return;
@@ -130,7 +158,8 @@ export default function StaffPage() {
         const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
         const matchSearch = fullName.includes(search.toLowerCase()) || s.cnic?.includes(search);
         const matchDes = designation === "All" || s.designation === designation;
-        const matchStatus = status === "All" || s.status === status;
+        const attStatus = getAttendanceStatus(s._id);
+        const matchStatus = status === "All" || attStatus === status;
         return matchSearch && matchDes && matchStatus;
     });
 
@@ -138,6 +167,8 @@ export default function StaffPage() {
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    const onDutyCount = staff.filter(s => getAttendanceStatus(s._id) === "On Duty").length;
 
     const statsCards = [
         { label: "Total Staff", value: staff.length, icon: Users, sub: "All members" },
@@ -168,7 +199,7 @@ export default function StaffPage() {
                         Staff Management
                     </h1>
                     <p className="text-gray-400 text-xs md:text-sm mt-0.5">
-                        {staff.length} members &bull; {staff.filter(s => s.status === "On Duty").length} on duty
+                        {staff.length} members &bull; {onDutyCount} on duty
                     </p>
                 </div>
                 <motion.button
@@ -182,6 +213,26 @@ export default function StaffPage() {
                     <span className="hidden sm:inline">Add Staff</span>
                     <span className="sm:hidden">Add</span>
                 </motion.button>
+            </motion.div>
+
+            {/* ── Date Picker for Attendance ── */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                className="flex items-center gap-3 flex-wrap">
+                <div className="w-full sm:w-56">
+                    <CustomDatePicker
+                        label="Attendance Date"
+                        value={attendanceDate}
+                        onChange={(date) => {
+                            const yyyy = date.getFullYear();
+                            const mm = String(date.getMonth() + 1).padStart(2, '0');
+                            const dd = String(date.getDate()).padStart(2, '0');
+                            setAttendanceDate(`${yyyy}-${mm}-${dd}`);
+                        }}
+                    />
+                </div>
+                <p className="text-xs text-gray-400 font-medium mt-5 sm:mt-0">
+                    Showing attendance for <span className="font-bold text-gray-600">{new Date(attendanceDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </p>
             </motion.div>
 
             {/* ── Stats Cards ── */}
@@ -231,12 +282,8 @@ export default function StaffPage() {
             >
                 {/* Toolbar */}
                 <div className="px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-100">
-                    {/* Search */}
                     <div className="relative flex-1 min-w-0" style={{ minWidth: "140px" }}>
-                        <Search
-                            size={15}
-                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                        />
+                        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search name or CNIC..."
@@ -249,8 +296,6 @@ export default function StaffPage() {
                             }}
                         />
                     </div>
-
-                    {/* Filter toggle */}
                     <motion.button
                         whileTap={{ scale: 0.96 }}
                         onClick={() => setShowFilters(!showFilters)}
@@ -263,11 +308,8 @@ export default function StaffPage() {
                     >
                         <SlidersHorizontal size={15} />
                         <span className="hidden sm:inline">Filters</span>
-                        {activeFilters && (
-                            <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
-                        )}
+                        {activeFilters && (<span className="w-2 h-2 rounded-full bg-[var(--primary)]" />)}
                     </motion.button>
-
                     <div className="ml-auto text-sm text-gray-400 flex-shrink-0">
                         <span className="font-bold text-gray-700">{filtered.length}</span> results
                     </div>
@@ -276,35 +318,13 @@ export default function StaffPage() {
                 {/* Filter Panel */}
                 <AnimatePresence>
                     {showFilters && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
                             <div className="px-4 md:px-6 py-4 bg-gray-50 border-b border-gray-100 flex flex-wrap items-end gap-3">
-                                <CustomDropdown
-                                    label="Designation"
-                                    options={designationOptions}
-                                    value={designation}
-                                    onChange={setDesignation}
-                                    className="w-full sm:w-48"
-                                />
-                                <CustomDropdown
-                                    label="Status"
-                                    options={statusOptions}
-                                    value={status}
-                                    onChange={setStatus}
-                                    className="w-full sm:w-44"
-                                />
+                                <CustomDropdown label="Designation" options={designationOptions} value={designation} onChange={setDesignation} className="w-full sm:w-48" />
+                                <CustomDropdown label="Status" options={statusOptions} value={status} onChange={setStatus} className="w-full sm:w-44" />
                                 {activeFilters && (
-                                    <button
-                                        onClick={() => {
-                                            setDesignation("All");
-                                            setStatus("All");
-                                        }}
-                                        className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer"
-                                    >
+                                    <button onClick={() => { setDesignation("All"); setStatus("All"); }}
+                                        className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer">
                                         <X size={12} /> Clear all
                                     </button>
                                 )}
@@ -319,12 +339,7 @@ export default function StaffPage() {
                         <thead>
                             <tr className="border-b border-gray-100">
                                 {["Staff Member", "Contact", "Designation", "Status", "Action"].map((h) => (
-                                    <th
-                                        key={h}
-                                        className="px-6 py-3.5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
-                                    >
-                                        {h}
-                                    </th>
+                                    <th key={h} className="px-6 py-3.5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">{h}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -332,74 +347,34 @@ export default function StaffPage() {
                             {isLoading ? (
                                 [...Array(5)].map((_, idx) => (
                                     <tr key={`sk-${idx}`} className="animate-pulse border-b border-gray-50">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-xl bg-gray-100"></div>
-                                                <div className="space-y-2">
-                                                    <div className="h-4 bg-gray-100 rounded w-24"></div>
-                                                    <div className="h-3 bg-gray-100 rounded w-16"></div>
-                                                </div>
-                                            </div>
-                                        </td>
+                                        <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-gray-100"></div><div className="space-y-2"><div className="h-4 bg-gray-100 rounded w-24"></div><div className="h-3 bg-gray-100 rounded w-16"></div></div></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24"></div></td>
                                         <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-28"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20"></div></td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-7 bg-gray-100 rounded-lg w-20"></div>
-                                                <div className="h-7 bg-gray-100 rounded-lg w-7"></div>
-                                            </div>
-                                        </td>
+                                        <td className="px-6 py-4"><div className="flex items-center gap-2"><div className="h-7 bg-gray-100 rounded-lg w-20"></div><div className="h-7 bg-gray-100 rounded-lg w-7"></div></div></td>
                                     </tr>
                                 ))
                             ) : paginatedData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-16 text-center">
-                                        <EmptyState onAdd={() => router.push("/dashboard/staff/add")} />
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={5} className="px-6 py-16 text-center"><EmptyState onAdd={() => router.push("/dashboard/staff/add")} /></td></tr>
                             ) : (
                                 paginatedData.map((s, i) => (
-                                    <motion.tr
-                                        key={s._id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: i * 0.03 }}
-                                        className="border-b border-gray-50 hover:bg-[#FFF8F8] transition-colors group"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <StaffAvatar s={s} />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm text-gray-500 font-medium">{s.mobile}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <DesBadge designation={s.designation} />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <StatusBadge status={s.status} />
-                                        </td>
+                                    <motion.tr key={s._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                                        className="border-b border-gray-50 hover:bg-[#FFF8F8] transition-colors group">
+                                        <td className="px-6 py-4"><StaffAvatar s={s} /></td>
+                                        <td className="px-6 py-4"><span className="text-sm text-gray-500 font-medium">{s.mobile}</span></td>
+                                        <td className="px-6 py-4"><DesBadge designation={s.designation} /></td>
+                                        <td className="px-6 py-4"><StatusBadge status={getAttendanceStatus(s._id)} /></td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
+                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                                     onClick={() => router.push(`/dashboard/staff/${s._id}`)}
                                                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer"
-                                                    style={{
-                                                        background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
-                                                        boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.3)",
-                                                    }}
-                                                >
-                                                    <Eye size={13} />
-                                                    View
+                                                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.3)" }}>
+                                                    <Eye size={13} /> View
                                                 </motion.button>
                                                 {!isManager && (
-                                                    <button
-                                                        onClick={() => confirmDelete(s._id)}
-                                                        className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-                                                        title="Delete Staff"
-                                                    >
+                                                    <button onClick={() => confirmDelete(s._id)}
+                                                        className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer" title="Delete Staff">
                                                         <Trash2 size={15} />
                                                     </button>
                                                 )}
@@ -419,85 +394,41 @@ export default function StaffPage() {
                             {[...Array(5)].map((_, idx) => (
                                 <div key={`sk-mob-${idx}`} className="px-4 py-4 flex items-center gap-3 animate-pulse">
                                     <div className="w-12 h-12 rounded-xl bg-gray-100 flex-shrink-0"></div>
-                                    <div className="flex-1 min-w-0 space-y-2">
-                                        <div className="h-4 bg-gray-100 rounded w-32"></div>
-                                        <div className="h-3 bg-gray-100 rounded w-24"></div>
-                                        <div className="flex gap-2">
-                                            <div className="h-5 bg-gray-100 rounded-full w-16"></div>
-                                            <div className="h-5 bg-gray-100 rounded-full w-16"></div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        <div className="h-7 bg-gray-100 rounded-lg w-16"></div>
-                                        <div className="h-7 bg-gray-100 rounded-lg w-7"></div>
-                                    </div>
+                                    <div className="flex-1 min-w-0 space-y-2"><div className="h-4 bg-gray-100 rounded w-32"></div><div className="h-3 bg-gray-100 rounded w-24"></div><div className="flex gap-2"><div className="h-5 bg-gray-100 rounded-full w-16"></div><div className="h-5 bg-gray-100 rounded-full w-16"></div></div></div>
+                                    <div className="flex items-center gap-2 flex-shrink-0"><div className="h-7 bg-gray-100 rounded-lg w-16"></div><div className="h-7 bg-gray-100 rounded-lg w-7"></div></div>
                                 </div>
                             ))}
                         </div>
                     ) : paginatedData.length === 0 ? (
-                        <div className="py-16 flex justify-center">
-                            <EmptyState onAdd={() => router.push("/dashboard/staff/add")} />
-                        </div>
+                        <div className="py-16 flex justify-center"><EmptyState onAdd={() => router.push("/dashboard/staff/add")} /></div>
                     ) : (
                         <div className="divide-y divide-gray-50">
                             {paginatedData.map((s, i) => (
-                                <motion.div
-                                    key={s._id}
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.04 }}
-                                    className="px-4 py-4 flex items-center gap-3"
-                                >
-                                    {/* Avatar */}
+                                <motion.div key={s._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="px-4 py-4 flex items-center gap-3">
                                     {s.photo ? (
-                                        <img
-                                            src={s.photo}
-                                            alt={s.firstName}
-                                            className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
-                                        />
+                                        <img src={s.photo} alt={s.firstName} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
                                     ) : (
-                                        <div
-                                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-                                            style={{ background: avatarColors[s.designation] || "var(--primary)" }}
-                                        >
-                                            {s.firstName[0]}
-                                            {s.lastName[0]}
+                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+                                            style={{ background: avatarColors[s.designation] || "var(--primary)" }}>
+                                            {s.firstName[0]}{s.lastName[0]}
                                         </div>
                                     )}
-
-                                    {/* Info */}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-gray-800 truncate">
-                                            {s.firstName} {s.lastName}
-                                        </p>
+                                        <p className="text-sm font-bold text-gray-800 truncate">{s.firstName} {s.lastName}</p>
                                         <p className="text-xs text-gray-400 truncate">{s.mobile}</p>
                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                             <DesBadge designation={s.designation} />
-                                            <StatusBadge status={s.status} small />
+                                            <StatusBadge status={getAttendanceStatus(s._id)} small />
                                         </div>
                                     </div>
-
-                                    {/* Action */}
                                     <div className="flex items-center gap-2">
-                                        <motion.button
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => router.push(`/dashboard/staff/${s._id}`)}
+                                        <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/staff/${s._id}`)}
                                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold flex-shrink-0 cursor-pointer"
-                                            style={{
-                                                background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
-                                                boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.25)",
-                                            }}
-                                        >
-                                            <Eye size={12} />
-                                            View
+                                            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.25)" }}>
+                                            <Eye size={12} /> View
                                         </motion.button>
                                         {!isManager && (
-                                            <button
-                                                onClick={() => confirmDelete(s._id)}
-                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            <button onClick={() => confirmDelete(s._id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={16} /></button>
                                         )}
                                     </div>
                                 </motion.div>
@@ -509,22 +440,14 @@ export default function StaffPage() {
                 {/* Pagination */}
                 {!isLoading && totalPages > 1 && (
                     <div className="border-t border-gray-100 bg-white">
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
+                        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                     </div>
                 )}
 
                 {/* Footer */}
                 <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                     <p className="text-xs text-gray-400">
-                        Showing{" "}
-                        <span className="font-bold text-gray-600">
-                            {paginatedData.length}
-                        </span>{" "}
-                        of <span className="font-bold text-gray-600">{filtered.length}</span> results
+                        Showing <span className="font-bold text-gray-600">{paginatedData.length}</span> of <span className="font-bold text-gray-600">{filtered.length}</span> results
                     </p>
                 </div>
             </motion.div>
@@ -547,24 +470,15 @@ function StaffAvatar({ s }: { s: StaffMember }) {
     return (
         <div className="flex items-center gap-3">
             {s.photo ? (
-                <img
-                    src={s.photo}
-                    alt={s.firstName}
-                    className="w-9 h-9 rounded-xl object-cover flex-shrink-0"
-                />
+                <img src={s.photo} alt={s.firstName} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
             ) : (
-                <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0"
-                    style={{ background: avatarColors[s.designation] || "var(--primary)" }}
-                >
-                    {s.firstName[0]}
-                    {s.lastName[0]}
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0"
+                    style={{ background: avatarColors[s.designation] || "var(--primary)" }}>
+                    {s.firstName[0]}{s.lastName[0]}
                 </div>
             )}
             <div>
-                <p className="text-sm font-bold text-gray-800">
-                    {s.firstName} {s.lastName}
-                </p>
+                <p className="text-sm font-bold text-gray-800">{s.firstName} {s.lastName}</p>
                 <p className="text-xs text-gray-400">{s.cnic}</p>
             </div>
         </div>
@@ -574,10 +488,7 @@ function StaffAvatar({ s }: { s: StaffMember }) {
 function DesBadge({ designation }: { designation: string }) {
     const style = desBadgeStyle(designation);
     return (
-        <span
-            className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
-            style={{ background: style.bg, color: style.color }}
-        >
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: style.bg, color: style.color }}>
             {designation}
         </span>
     );
@@ -585,17 +496,19 @@ function DesBadge({ designation }: { designation: string }) {
 
 function StatusBadge({ status, small }: { status: string; small?: boolean }) {
     const isOn = status === "On Duty";
+    const isAbsent = status === "Absent";
+    const isNotMarked = status === "Not Marked";
+
     return (
         <div className="flex items-center gap-1.5">
             {isOn ? (
                 <CheckCircle2 size={small ? 12 : 15} className="text-emerald-500" />
-            ) : (
+            ) : isAbsent ? (
                 <XCircle size={small ? 12 : 15} className="text-[var(--primary)]" />
+            ) : (
+                <MinusCircle size={small ? 12 : 15} className="text-gray-400" />
             )}
-            <span
-                className={`font-semibold ${small ? "text-xs" : "text-sm"} ${isOn ? "text-emerald-600" : "text-[var(--primary)]"
-                    }`}
-            >
+            <span className={`font-semibold ${small ? "text-xs" : "text-sm"} ${isOn ? "text-emerald-600" : isAbsent ? "text-[var(--primary)]" : "text-gray-400"}`}>
                 {status}
             </span>
         </div>
@@ -609,12 +522,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
                 <Users className="w-7 h-7 text-gray-300" />
             </div>
             <p className="text-gray-400 text-sm font-medium">No staff members found</p>
-            <button
-                onClick={onAdd}
-                className="text-xs font-bold hover:underline cursor-pointer"
-            >
-                + Add first staff member
-            </button>
+            <button onClick={onAdd} className="text-xs font-bold hover:underline cursor-pointer">+ Add first staff member</button>
         </div>
     );
 }

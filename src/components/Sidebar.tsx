@@ -40,6 +40,7 @@ const navGroups = [
             { name: "Expenses", icon: Receipt, path: "/dashboard/expenses" },
             { name: "Trips", icon: MapPin, path: "/dashboard/trips/add" },
             { name: "Reminders", icon: Bell, path: "/dashboard/reminders" },
+            { name: "Ledger", icon: BarChart3, path: "/dashboard/ledger" },
         ],
     },
     {

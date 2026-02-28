@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
             const fifteenDaysFromNow = new Date();
             fifteenDaysFromNow.setDate(now.getDate() + 15);
 
+            // Include past/overdue + today + next 15 days — all incomplete reminders
             query.reminderDate = {
-                $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
                 $lte: new Date(fifteenDaysFromNow.getFullYear(), fifteenDaysFromNow.getMonth(), fifteenDaysFromNow.getDate(), 23, 59, 59)
             };
             query.isCompleted = false;

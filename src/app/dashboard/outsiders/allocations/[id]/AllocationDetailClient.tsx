@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, Pencil } from 'lucide-react';
 import Loader from '@/components/Loader';
 import InfoCard from '@/components/staff/InfoCard';
 import EditModal from '@/components/staff/EditModal';
@@ -70,6 +70,27 @@ export default function AllocationDetailClient({ id }: AllocationDetailClientPro
         }
     };
 
+    // Parse laborNames string into array of names
+    const parseLaborNames = () => {
+        if (!allocation) return [];
+        // Check labors array first (backward compat)
+        if (allocation.labors && allocation.labors.length > 0) {
+            return allocation.labors.map((l: any, i: number) => ({
+                label: `Laborer ${i + 1}`, value: l.laborName || l.name || l
+            }));
+        }
+        // Check laborNames string field (actual model field)
+        if (allocation.laborNames && typeof allocation.laborNames === 'string') {
+            const names = allocation.laborNames.split(',').map((n: string) => n.trim()).filter(Boolean);
+            if (names.length > 0) {
+                return names.map((name: string, i: number) => ({
+                    label: `Laborer ${i + 1}`, value: name
+                }));
+            }
+        }
+        return [];
+    };
+
     if (loading) return <Loader fullScreen />;
     if (!allocation) return <div className="p-8 text-center text-red-500 font-bold">Allocation not found</div>;
 
@@ -77,6 +98,8 @@ export default function AllocationDetailClient({ id }: AllocationDetailClientPro
     const isLabor = allocation.outsider?.category === 'Labor Outsider' || allocation.outsider?.category === 'Both';
     const statusBg = allocation.paymentStatus === 'Paid' ? 'bg-green-500' : allocation.paymentStatus === 'Partial Paid' ? 'bg-sky-500' : 'bg-red-500';
     const StatusIcon = allocation.paymentStatus === 'Paid' ? CheckCircle : allocation.paymentStatus === 'Partial Paid' ? AlertCircle : XCircle;
+
+    const laborItems = parseLaborNames();
 
     return (
         <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto pb-20 p-3 sm:p-4 md:p-8">
@@ -86,7 +109,7 @@ export default function AllocationDetailClient({ id }: AllocationDetailClientPro
                     className="w-9 h-9 md:w-10 md:h-10 bg-white rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 shadow-sm border border-gray-100 transition-all cursor-pointer flex-shrink-0">
                     <ArrowLeft size={18} />
                 </button>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <h1 className="text-lg md:text-2xl font-black text-gray-900 tracking-tight">Allocation Details</h1>
                     <p className="text-xs md:text-sm font-semibold text-gray-400 uppercase tracking-wider mt-1 flex items-center gap-2 flex-wrap">
                         <span className="truncate">{allocation.outsider?.outsiderName} - {allocation.customerName}</span>
@@ -95,6 +118,17 @@ export default function AllocationDetailClient({ id }: AllocationDetailClientPro
                         </span>
                     </p>
                 </div>
+                {/* Edit Button */}
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => router.push(`/dashboard/outsiders/allocations/add?outsiderId=${allocation.outsider?._id}&category=${encodeURIComponent(allocation.outsider?.category || '')}&editId=${id}`)}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
+                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", boxShadow: "0 4px 15px rgba(var(--primary-rgb,181,1,4),0.35)" }}
+                >
+                    <Pencil size={14} />
+                    <span className="hidden sm:inline">Edit</span>
+                </motion.button>
             </div>
 
             <AnimatePresence mode="wait">
@@ -130,8 +164,8 @@ export default function AllocationDetailClient({ id }: AllocationDetailClientPro
                     {isLabor && (
                         <div className="md:col-span-2">
                             <InfoCard title={`Labor Details (${allocation.laborQty})`} columns={3} delay={0.4}
-                                items={allocation.labors?.length > 0
-                                    ? allocation.labors.map((l: any, i: number) => ({ label: `Laborer ${i + 1}`, value: l.laborName || 'N/A' }))
+                                items={laborItems.length > 0
+                                    ? laborItems
                                     : [{ label: 'Labors', value: 'No details provided' }]} />
                         </div>
                     )}

@@ -27,6 +27,7 @@ interface OutsiderMember {
     category: string;
     contactNo: string;
     lastAllocation: string | null;
+    lastAllocationDate: string | null;
     balanceStatus: string;
 }
 
@@ -56,6 +57,15 @@ const badgeStyle = (cat: string) => {
         "Both": { bg: "rgba(124,58,237,0.1)", color: "#7C3AED" },
     };
     return map[cat] || { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" };
+};
+
+const formatDate = (d: string | null | undefined) => {
+    if (!d) return '-';
+    try {
+        return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+        return '-';
+    }
 };
 
 export default function OutsiderPage() {
@@ -407,7 +417,7 @@ export default function OutsiderPage() {
                                             <span className="text-sm text-gray-500 font-medium whitespace-nowrap">{o.contactNo}</span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500 font-medium">
-                                            {formatDate(o.lastAllocation)}
+                                            {formatDate(o.lastAllocationDate || o.lastAllocation)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`text-sm font-bold ${o.balanceStatus === "Clear" ? "text-emerald-600" : "text-[var(--primary)]"}`}>
