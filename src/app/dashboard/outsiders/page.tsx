@@ -13,6 +13,7 @@ import {
     Plus,
     X,
     Trash2,
+    Database,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import DeleteModal from "@/components/DeleteModal";
@@ -188,17 +189,29 @@ export default function OutsiderPage() {
                         {outsiders.filter((s) => s.balanceStatus === "Clear").length} cleared
                     </p>
                 </div>
-                <motion.button
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => router.push("/dashboard/outsiders/add")}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
-                >
-                    <Plus size={15} />
-                    <span className="hidden sm:inline">Add Outsider</span>
-                    <span className="sm:hidden">Add</span>
-                </motion.button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <motion.button
+                        whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(128,0,0,0.25)" }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => window.location.href = '/dashboard/invoice?type=allocation'}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#800000] text-white text-sm font-bold shadow-lg cursor-pointer"
+                    >
+                        <Database size={15} />
+                        <span className="hidden sm:inline">Outsider Invoice</span>
+                        <span className="sm:hidden">Invoice</span>
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/dashboard/outsiders/add")}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg cursor-pointer"
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
+                    >
+                        <Plus size={15} />
+                        <span className="hidden sm:inline">Add Outsider</span>
+                        <span className="sm:hidden">Add</span>
+                    </motion.button>
+                </div>
             </motion.div>
 
             {/* ── Stats Cards (Redesigned to Staff Page matching) ── */}

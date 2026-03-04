@@ -76,8 +76,24 @@ export default function AddTripPage() {
     return (
         <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto pb-20 p-3 sm:p-4 md:p-8">
             {/* Title */}
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">Add New Trip</h1>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => window.location.href = '/dashboard/invoice?type=inbound'}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#800000] text-white rounded-lg shadow-sm hover:bg-black transition-all text-[10px] font-bold cursor-pointer active:scale-95"
+                    >
+                        <CheckCircle size={14} /> Inbound Invoice
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => window.location.href = '/dashboard/invoice?type=outbound'}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#800000] text-white rounded-lg shadow-sm hover:bg-black transition-all text-[10px] font-bold cursor-pointer active:scale-95"
+                    >
+                        <CheckCircle size={14} /> Outbound Invoice
+                    </button>
+                </div>
             </motion.div>
 
             <form onSubmit={handleSubmit} className="bg-white rounded-2xl md:rounded-3xl border border-gray-100 shadow-[0_2px_20px_rgba(0,0,0,0.04)] divide-y divide-gray-100">

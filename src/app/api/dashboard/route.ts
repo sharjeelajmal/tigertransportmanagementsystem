@@ -4,6 +4,7 @@ import Staff from "@/models/Staff";
 import Vehicle from "@/models/Vehicle";
 import Expense from "@/models/Expense";
 import OutsiderAllocation from "@/models/OutsiderAllocation";
+import Outsider from "@/models/Outsider";
 import Reminder from "@/models/Reminder";
 import Attendance from "@/models/Attendance";
 import Payroll from "@/models/Payroll";
@@ -11,6 +12,10 @@ import Payroll from "@/models/Payroll";
 export async function GET() {
     try {
         await connectDB();
+
+        // Ensure models are registered to avoid MissingSchemaError during population
+        // nextjs with turbopack sometimes skips unused imports
+        const _models = [Staff, Vehicle, Expense, OutsiderAllocation, Outsider, Reminder, Attendance, Payroll];
 
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;

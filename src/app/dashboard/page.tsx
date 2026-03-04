@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import { Printer } from "lucide-react";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import DashboardReminders from "@/components/dashboard/DashboardReminders";
 import DashboardActivity from "@/components/dashboard/DashboardActivity";
@@ -57,9 +58,29 @@ export default function DashboardPage() {
                         Welcome back, {displayName} 👋
                     </p>
                 </div>
-                <p className="text-xs text-gray-400 font-medium hidden sm:block">
-                    {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 justify-end mt-3 md:mt-0">
+                    <button
+                        onClick={() => window.location.href = '/dashboard/invoice?type=inbound'}
+                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-white text-[#800000] border-2 border-[#800000] rounded-lg shadow-sm hover:bg-red-50 transition-all text-[10px] md:text-xs font-bold cursor-pointer active:scale-95"
+                    >
+                        <Printer size={14} className="md:w-4 md:h-4" /> Inbound
+                    </button>
+                    <button
+                        onClick={() => window.location.href = '/dashboard/invoice?type=outbound'}
+                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-[#800000] text-white rounded-lg shadow-sm hover:bg-black transition-all text-[10px] md:text-xs font-bold cursor-pointer active:scale-95 border-2 border-[#800000] hover:border-black"
+                    >
+                        <Printer size={14} className="md:w-4 md:h-4" /> Outbound
+                    </button>
+                    <button
+                        onClick={() => window.location.href = '/dashboard/invoice?type=allocation'}
+                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-gray-900 text-white rounded-lg shadow-sm hover:bg-black transition-all text-[10px] md:text-xs font-bold cursor-pointer active:scale-95 border-2 border-gray-900"
+                    >
+                        <Printer size={14} className="md:w-4 md:h-4" /> Outsider
+                    </button>
+                    <p className="text-[10px] md:text-xs text-gray-400 font-medium hidden lg:block border-l pl-3 border-gray-200 ml-1">
+                        {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                </div>
             </motion.div>
 
             {/* Stats Cards */}

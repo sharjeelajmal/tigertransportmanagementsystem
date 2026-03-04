@@ -22,6 +22,7 @@ import {
     Bell,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAuth } from "@/context/AuthContext";
 
 const navGroups = [
     {
@@ -39,6 +40,7 @@ const navGroups = [
             { name: "Vehicles", icon: Truck, path: "/dashboard/vehicles" },
             { name: "Expenses", icon: Receipt, path: "/dashboard/expenses" },
             { name: "Trips", icon: MapPin, path: "/dashboard/trips/add" },
+            { name: "Invoices", icon: FileText, path: "/dashboard/invoices" },
             { name: "Reminders", icon: Bell, path: "/dashboard/reminders" },
             { name: "Ledger", icon: BarChart3, path: "/dashboard/ledger" },
         ],
@@ -62,6 +64,7 @@ function NavContent({
     onLinkClick?: () => void;
 }) {
     const pathname = usePathname();
+    const { logout } = useAuth();
 
     const isActive = (path: string) => {
         if (path === "/dashboard") return pathname === "/dashboard";
@@ -221,6 +224,7 @@ function NavContent({
                 <motion.button
                     whileHover={{ x: collapsed ? 0 : 3 }}
                     whileTap={{ scale: 0.97 }}
+                    onClick={logout}
                     className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-150"
                     style={{ justifyContent: collapsed ? "center" : "flex-start" }}
                     onMouseEnter={(e) => {
