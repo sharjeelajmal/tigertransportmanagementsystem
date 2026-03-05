@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Avoid lock contention with stale .next artifacts on Windows.
-  distDir: ".next-build",
+  // Keep a custom dist dir for local Windows builds, but use Next.js default
+  // output on Vercel so deployment expects `.next/routes-manifest.json`.
+  distDir: process.env.VERCEL ? ".next" : ".next-build",
   webpack: (config) => {
     // Work around WasmHash crashes in some Node/webpack combinations.
     config.output.hashFunction = "sha256";
