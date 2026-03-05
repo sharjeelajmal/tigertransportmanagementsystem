@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, Menu, ChevronDown, Clock, AlertCircle, User, LogOut } from "lucide-react";
+import { Bell, Search, Menu, ChevronDown, Clock, AlertCircle, User, LogOut, Settings, ListChecks } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
@@ -30,6 +30,16 @@ export default function Header() {
     const displayRole = role === "admin" ? "Super Admin" : "Manager";
     const firstLetter = displayName.charAt(0).toUpperCase();
 
+    const fetchNotifications = async () => {
+        try {
+            const res = await fetch("/api/reminders?filter=approaching");
+            const data = await res.json();
+            if (data.success) setReminders(data.data);
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+        }
+    };
+
     useEffect(() => {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 60000);
@@ -48,16 +58,6 @@ export default function Header() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    const fetchNotifications = async () => {
-        try {
-            const res = await fetch("/api/reminders?filter=approaching");
-            const data = await res.json();
-            if (data.success) setReminders(data.data);
-        } catch (error) {
-            console.error("Error fetching notifications:", error);
-        }
-    };
 
     const getDaysLeft = (dateStr: string) => {
         const reminderDate = new Date(dateStr);
@@ -152,6 +152,20 @@ export default function Header() {
                                     <p className="text-xs text-gray-400">{displayRole}</p>
                                 </div>
                                 <div className="p-1.5">
+                                    <button
+                                        onClick={() => { setShowProfileMenu(false); router.push("/dashboard/reminders"); }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors cursor-pointer"
+                                    >
+                                        <ListChecks size={16} />
+                                        Reminders
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowProfileMenu(false); router.push("/dashboard/settings"); }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors cursor-pointer"
+                                    >
+                                        <Settings size={16} />
+                                        Settings
+                                    </button>
                                     <button
                                         onClick={() => { setShowProfileMenu(false); router.push("/dashboard/profile"); }}
                                         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors cursor-pointer"

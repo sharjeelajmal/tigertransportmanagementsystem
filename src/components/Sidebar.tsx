@@ -10,16 +10,12 @@ import {
     MapPin,
     BarChart3,
     FileText,
-    Settings,
     LogOut,
     ChevronRight,
     Menu,
     X,
-    ClipboardList,
     Receipt,
-    Wallet,
     Banknote,
-    Bell,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
@@ -35,19 +31,12 @@ const navGroups = [
             { name: "Staff", icon: Users, path: "/dashboard/staff" },
             { name: "Outsiders", icon: Users, path: "/dashboard/outsiders" },
             { name: "Allocations", icon: Banknote, path: "/dashboard/outsiders/allocations" },
-            { name: "Attendance", icon: ClipboardList, path: "/dashboard/attendance" },
-            { name: "Payroll", icon: Wallet, path: "/dashboard/payroll" },
             { name: "Vehicles", icon: Truck, path: "/dashboard/vehicles" },
             { name: "Expenses", icon: Receipt, path: "/dashboard/expenses" },
             { name: "Trips", icon: MapPin, path: "/dashboard/trips/add" },
             { name: "Invoices", icon: FileText, path: "/dashboard/invoices" },
-            { name: "Reminders", icon: Bell, path: "/dashboard/reminders" },
             { name: "Ledger", icon: BarChart3, path: "/dashboard/ledger" },
         ],
-    },
-    {
-        label: "System",
-        items: [{ name: "Settings", icon: Settings, path: "/dashboard/settings" }],
     },
 ];
 

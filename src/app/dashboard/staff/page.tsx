@@ -17,6 +17,8 @@ import {
     MinusCircle,
     X,
     Trash2,
+    ClipboardList,
+    Wallet,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
@@ -202,17 +204,37 @@ export default function StaffPage() {
                         {staff.length} members &bull; {onDutyCount} on duty
                     </p>
                 </div>
-                <motion.button
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => router.push("/dashboard/staff/add")}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
-                >
-                    <Plus size={15} />
-                    <span className="hidden sm:inline">Add Staff</span>
-                    <span className="sm:hidden">Add</span>
-                </motion.button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/dashboard/attendance")}
+                        className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                    >
+                        <ClipboardList size={14} />
+                        <span className="hidden sm:inline">Attendance</span>
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/dashboard/payroll")}
+                        className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                    >
+                        <Wallet size={14} />
+                        <span className="hidden sm:inline">Payroll</span>
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/dashboard/staff/add")}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg cursor-pointer"
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
+                    >
+                        <Plus size={15} />
+                        <span className="hidden sm:inline">Add Staff</span>
+                        <span className="sm:hidden">Add</span>
+                    </motion.button>
+                </div>
             </motion.div>
 
             {/* ── Date Picker for Attendance ── */}
