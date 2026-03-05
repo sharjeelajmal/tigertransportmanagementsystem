@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
-import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
 import DeleteModal from "@/components/DeleteModal";
 
@@ -122,8 +121,6 @@ export default function InvoicesPage() {
     const filtered = invoices.filter((inv) => {
         const nameMatch = (inv.clientName || inv.partyName || "").toLowerCase().includes(search.toLowerCase());
         const noMatch = inv.invoiceNo.toLowerCase().includes(search.toLowerCase());
-        const matchSearch = String(nameMatch || noMatch); // Ensuring it's a search match
-
         const matchType = typeFilter === "All" || inv.type.toLowerCase() === typeFilter.toLowerCase();
 
         let matchDate = true;
@@ -167,7 +164,7 @@ export default function InvoicesPage() {
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto p-2">
+        <div className="space-y-6 max-w-7xl mx-auto p-3 sm:p-4">
             {/* ── Page Header ── */}
             <motion.div
                 initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
@@ -180,7 +177,7 @@ export default function InvoicesPage() {
                 <motion.button
                     whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                     onClick={() => router.push("/dashboard")}
-                    className="flex items-center gap-2 px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-lg"
+                    className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-lg"
                     style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
                 >
                     <Plus size={18} /><span>New Invoice</span>
@@ -256,8 +253,8 @@ export default function InvoicesPage() {
                     </AnimatePresence>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto relative z-10 pb-40">
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto relative z-10 pb-40">
                     <table className="w-full min-w-[800px]">
                         <thead>
                             <tr className="bg-gray-50/50">
@@ -347,9 +344,82 @@ export default function InvoicesPage() {
                     </table>
                 </div>
 
+                {/* Mobile Cards */}
+                <div className="md:hidden px-3 py-4 space-y-3">
+                    {isLoading ? (
+                        [...Array(4)].map((_, i) => (
+                            <div key={i} className="animate-pulse h-32 rounded-2xl bg-gray-50 border border-gray-100" />
+                        ))
+                    ) : paginatedData.length === 0 ? (
+                        <div className="py-14 text-center opacity-40">
+                            <FileText size={42} className="mx-auto text-gray-400 mb-3" />
+                            <p className="font-bold text-gray-500 text-sm">No invoices found matching your criteria</p>
+                        </div>
+                    ) : (
+                        paginatedData.map((inv, i) => (
+                            <motion.div
+                                key={inv._id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.04 }}
+                                className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Invoice</p>
+                                        <p className="text-sm font-black text-gray-900">#{inv.invoiceNo}</p>
+                                        <p className="mt-1 text-[11px] text-gray-500 font-medium">{inv.clientName || inv.partyName || "-"}</p>
+                                    </div>
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border tracking-wider ${getTypeColor(inv.type)}`}>
+                                        {getTypeIcon(inv.type)} {inv.type === 'allocation' ? 'outsider' : inv.type}
+                                    </span>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                                    <div className="rounded-xl bg-gray-50 border border-gray-100 p-2.5">
+                                        <p className="text-gray-400 font-bold uppercase tracking-wide">Amount</p>
+                                        <p className="text-gray-900 font-black mt-0.5">Rs. {inv.totalAmount.toLocaleString()}</p>
+                                    </div>
+                                    <div className="rounded-xl bg-gray-50 border border-gray-100 p-2.5">
+                                        <p className="text-gray-400 font-bold uppercase tracking-wide">Created</p>
+                                        <p className="text-gray-900 font-bold mt-0.5">{new Date(inv.createdAt).toLocaleDateString('en-GB')}</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-2 text-[11px] text-gray-500 font-medium flex items-center gap-1.5">
+                                    <Calendar size={12} /> {inv.invoiceDate}
+                                </div>
+
+                                <div className="mt-4 flex items-center gap-2">
+                                    <button
+                                        onClick={() => router.push(`/dashboard/invoice?id=${inv._id}&type=${inv.type}`)}
+                                        className="flex-1 h-10 rounded-xl border border-gray-200 text-gray-600 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 transition-colors flex items-center justify-center gap-2 text-sm font-bold"
+                                    >
+                                        <Eye size={15} /> View
+                                    </button>
+                                    <button
+                                        onClick={() => handleDownloadPDF(inv._id)}
+                                        className="h-10 w-10 rounded-xl border border-gray-200 text-gray-600 hover:text-emerald-600 hover:border-emerald-200 transition-colors flex items-center justify-center"
+                                        title="Download PDF"
+                                    >
+                                        <Download size={15} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(inv._id)}
+                                        className="h-10 w-10 rounded-xl border border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-200 transition-colors flex items-center justify-center"
+                                        title="Delete Invoice"
+                                    >
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))
+                    )}
+                </div>
+
                 {/* Pagination */}
                 {!isLoading && totalPages > 1 && (
-                    <div className="px-8 py-6 bg-gray-50/50 backdrop-blur-md border-t border-gray-100 relative z-10">
+                    <div className="px-4 sm:px-8 py-6 bg-gray-50/50 backdrop-blur-md border-t border-gray-100 relative z-10">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

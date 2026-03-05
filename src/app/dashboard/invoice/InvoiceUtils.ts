@@ -56,8 +56,19 @@ export const downloadInvoicePDF = async (filename: string) => {
   // Temporarily bypass any mobile zoom or transform scaling so the PDF captures perfect 100% width
   const originalZoom = element.style.zoom;
   const originalTransform = element.style.transform;
+  const scaleHolders = Array.from(document.querySelectorAll(".inv-screen-scale-holder")) as HTMLElement[];
+  const scaleWraps = Array.from(document.querySelectorAll(".inv-screen-scale-wrap")) as HTMLElement[];
+  const holderStyles = scaleHolders.map((el) => ({ el, width: el.style.width, height: el.style.height }));
+  const wrapStyles = scaleWraps.map((el) => ({ el, transform: el.style.transform }));
   element.style.zoom = '1';
   element.style.transform = 'none';
+  scaleHolders.forEach((el) => {
+    el.style.width = '794px';
+    el.style.height = '1123px';
+  });
+  scaleWraps.forEach((el) => {
+    el.style.transform = 'none';
+  });
 
   // Before generating, we briefly adjust the UI to look like print (hide buttons)
   const noPrintElements = document.querySelectorAll(".no-print");
@@ -69,6 +80,13 @@ export const downloadInvoicePDF = async (filename: string) => {
   // Restore UI
   element.style.zoom = originalZoom;
   element.style.transform = originalTransform;
+  holderStyles.forEach(({ el, width, height }) => {
+    el.style.width = width;
+    el.style.height = height;
+  });
+  wrapStyles.forEach(({ el, transform }) => {
+    el.style.transform = transform;
+  });
   noPrintElements.forEach(el => (el as HTMLElement).style.display = '');
 };
 
@@ -107,6 +125,18 @@ export const PRINT_CSS = `
   }
 
   /* Outer wrapper */
+  .inv-screen-scale-holder {
+    width: 210mm !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .inv-screen-scale-wrap {
+    width: 210mm !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
   .inv-outer {
     display: block !important;
     position: static !important;

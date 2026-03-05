@@ -7,6 +7,25 @@ import InboundInvoice from "./InboundInvoice";
 import OutboundInvoice from "./OutboundInvoice";
 import AllocationInvoice from "./AllocationInvoice";
 
+interface SavedInvoicePayload {
+    _id: string;
+    invoiceNo: string;
+    billingDate: string;
+    invoiceDate: string;
+    clientName?: string;
+    clientPhone?: string;
+    clientAddress?: string;
+    remarks?: string;
+    discount?: number;
+    advance?: number;
+    partyName?: string;
+    vehicleNo?: string;
+    vehicleDetail?: string;
+    pickupFrom?: string;
+    deliverTo?: string;
+    items: InvoiceItem[];
+}
+
 export default function InvoicePageContent() {
     const sp = useSearchParams();
     const type = sp.get("type") || "inbound";
@@ -18,6 +37,10 @@ export default function InvoicePageContent() {
     const [pages, setPages] = useState<PageData[]>([]);
     const [meta, setMeta] = useState<Meta>({ invoiceNo: "", billingDate: "", invoiceDate: "", clientName: "", clientPhone: "", clientAddress: "", remarks: "", discount: 0, advance: 0, partyName: "", vehicleNo: "", vehicleDetail: "", pickupFrom: "", deliverTo: "" });
     const [saving, setSaving] = useState(false), [saved, setSaved] = useState(false);
+    const [screenScale, setScreenScale] = useState(1);
+
+    const PAGE_WIDTH = 794;
+    const PAGE_HEIGHT = 1123;
 
     useEffect(() => {
         const s = document.createElement("style"); s.innerHTML = PRINT_CSS; document.head.appendChild(s);
@@ -29,7 +52,7 @@ export default function InvoicePageContent() {
         if (invoiceId) {
             fetch("/api/invoices").then(r => r.json()).then(data => {
                 if (!data.success) return;
-                const f = data.data.find((x: any) => x._id === invoiceId);
+                const f = (data.data as SavedInvoicePayload[]).find((x) => x._id === invoiceId);
                 if (!f) return;
                 setMeta({ invoiceNo: f.invoiceNo, billingDate: f.billingDate, invoiceDate: f.invoiceDate, clientName: f.clientName || "", clientPhone: f.clientPhone || "", clientAddress: f.clientAddress || "", remarks: f.remarks || "", discount: f.discount || 0, advance: f.advance || 0, partyName: f.partyName || "", vehicleNo: f.vehicleNo || "", vehicleDetail: f.vehicleDetail || "", pickupFrom: f.pickupFrom || "", deliverTo: f.deliverTo || "" });
                 setPages([{ id: "p1", items: f.items.length ? f.items : [makeItem()] }]);
@@ -50,13 +73,26 @@ export default function InvoicePageContent() {
         }
         setMeta(m => ({ ...m, billingDate: today(), invoiceDate: today(), invoiceNo: genNo() }));
         setPages([{ id: "p1", items: [makeItem()] }]);
-    }, [invoiceId]);
+    }, [invoiceId, sp, type]);
+
+    useEffect(() => {
+        const updateScale = () => {
+            const viewportWidth = window.innerWidth;
+            const availableWidth = viewportWidth - 32;
+            const next = Math.min(1, Math.max(0.48, availableWidth / PAGE_WIDTH));
+            setScreenScale(next);
+        };
+
+        updateScale();
+        window.addEventListener("resize", updateScale);
+        return () => window.removeEventListener("resize", updateScale);
+    }, []);
 
     const subtotal = useMemo(() => pages.reduce((a, p) => a + p.items.reduce((b, it) => b + (it.amount || it.rate * it.qty || 0), 0), 0), [pages]);
     const netTotal = useMemo(() => subtotal - (meta.discount || 0), [subtotal, meta.discount]);
     const remaining = useMemo(() => netTotal - (meta.advance || 0), [netTotal, meta.advance]);
 
-    const sm = (k: keyof Meta, v: any) => setMeta(m => ({ ...m, [k]: v }));
+    const sm = <K extends keyof Meta>(k: K, v: Meta[K]) => setMeta(m => ({ ...m, [k]: v }));
     const addPage = () => setPages(p => [...p, { id: `p${Date.now()}`, items: [makeItem()] }]);
     const delPage = (pid: string) => pages.length > 1 && setPages(p => p.filter(x => x.id !== pid));
     const addRow = (pid: string) => setPages(ps => ps.map(p => {
@@ -65,7 +101,7 @@ export default function InvoicePageContent() {
         return { ...p, items: [...p.items, makeItem()] };
     }));
     const delRow = (pid: string, iid: string) => setPages(ps => ps.map(p => p.id === pid && p.items.length > 1 ? { ...p, items: p.items.filter(i => i.id !== iid) } : p));
-    const updItem = (pid: string, iid: string, k: keyof InvoiceItem, v: any) => setPages(ps => ps.map(p => p.id !== pid ? p : { ...p, items: p.items.map(i => i.id === iid ? { ...i, [k]: v } : i) }));
+    const updItem = <K extends keyof InvoiceItem>(pid: string, iid: string, k: K, v: InvoiceItem[K]) => setPages(ps => ps.map(p => p.id !== pid ? p : { ...p, items: p.items.map(i => i.id === iid ? { ...i, [k]: v } : i) }));
 
     const handleSave = async () => {
         setSaving(true);
@@ -100,13 +136,24 @@ export default function InvoicePageContent() {
     if (!ready) return null;
 
     return (
-        <div className="invoice-print-root" style={{ minHeight: "100vh", background: "#c9c9c9", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 28, paddingBottom: 60, fontFamily: "'Montserrat', sans-serif" }}>
+        <div className="invoice-print-root" style={{ minHeight: "100vh", background: "#c9c9c9", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 16, paddingBottom: 40, paddingLeft: 12, paddingRight: 12, fontFamily: "'Montserrat', sans-serif" }}>
             <InvoiceActions type={type} addPage={addPage} handleSave={handleSave} saving={saving} saved={saved} />
-            <div className="inv-pages-container" style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+            <div className="inv-pages-container" style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", alignItems: "center" }}>
                 {pages.map((page, idx) => (
-                    isInbound ? <InboundInvoice key={page.id} page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
-                        isOutbound ? <OutboundInvoice key={page.id} page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
-                            <AllocationInvoice key={page.id} page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} remaining={remaining} delPage={delPage} pagesCount={pages.length} />
+                    <div
+                        key={page.id}
+                        className="inv-screen-scale-holder"
+                        style={{ width: PAGE_WIDTH * screenScale, height: PAGE_HEIGHT * screenScale }}
+                    >
+                        <div
+                            className="inv-screen-scale-wrap"
+                            style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, transform: `scale(${screenScale})`, transformOrigin: "top left" }}
+                        >
+                            {isInbound ? <InboundInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
+                                isOutbound ? <OutboundInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
+                                    <AllocationInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} remaining={remaining} delPage={delPage} pagesCount={pages.length} />}
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>

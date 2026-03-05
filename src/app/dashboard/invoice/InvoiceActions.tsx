@@ -12,7 +12,7 @@ interface Props {
 
 export default function InvoiceActions({ type, addPage, handleSave, saving, saved }: Props) {
     return (
-        <div className="action-bar no-print" style={{ display: "flex", gap: 8, alignItems: "center", background: "#fff", padding: "10px 18px", borderRadius: 14, boxShadow: "0 4px 24px rgba(0,0,0,0.13)", marginBottom: 28, position: "sticky", top: 14, zIndex: 100 }}>
+        <div className="action-bar no-print" style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", background: "#fff", padding: "10px 14px", borderRadius: 14, boxShadow: "0 4px 24px rgba(0,0,0,0.13)", marginBottom: 20, position: "sticky", top: 8, zIndex: 100, maxWidth: "100%" }}>
             <span style={{ fontSize: 9, fontWeight: 800, color: R1, background: "rgba(107,12,16,0.08)", padding: "3px 11px", borderRadius: 20, letterSpacing: "0.1em", textTransform: "uppercase" }}>{type}</span>
             <div style={{ width: 1, height: 26, background: "#eee" }} />
             <ABtn icon={<FilePlus size={13} />} label="Add Page" onClick={addPage} />
