@@ -104,6 +104,21 @@ export default function InvoicePageContent() {
     const updItem = <K extends keyof InvoiceItem>(pid: string, iid: string, k: K, v: InvoiceItem[K]) => setPages(ps => ps.map(p => p.id !== pid ? p : { ...p, items: p.items.map(i => i.id === iid ? { ...i, [k]: v } : i) }));
 
     const handleSave = async () => {
+        if (invoiceId) {
+            setSaving(true);
+            setSaved(true);
+            setTimeout(() => {
+                import("./InvoiceUtils").then(({ downloadInvoicePDF }) => {
+                    const filename = `${type.toUpperCase()}_INVOICE_${meta.invoiceNo}.pdf`;
+                    downloadInvoicePDF(filename).then(() => {
+                        setSaved(false);
+                        setSaving(false);
+                    });
+                });
+            }, 500);
+            return;
+        }
+
         setSaving(true);
         try {
             const items = pages.flatMap(p => p.items).filter(i => i.cargoDetails || i.rate || i.amount);

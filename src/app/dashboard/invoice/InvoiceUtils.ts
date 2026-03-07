@@ -71,8 +71,11 @@ export const downloadInvoicePDF = async (filename: string) => {
   });
 
   // Before generating, we briefly adjust the UI to look like print (hide buttons)
-  const noPrintElements = document.querySelectorAll(".no-print");
-  noPrintElements.forEach(el => (el as HTMLElement).style.display = 'none');
+  const noPrintElements = Array.from(document.querySelectorAll(".no-print")) as HTMLElement[];
+  const noPrintDisplay = noPrintElements.map((el) => ({ el, display: el.style.display }));
+  noPrintElements.forEach((el) => {
+    el.style.display = "none";
+  });
 
   // Generate and save
   await html2pdf().set(opt).from(element).save();
@@ -87,7 +90,9 @@ export const downloadInvoicePDF = async (filename: string) => {
   wrapStyles.forEach(({ el, transform }) => {
     el.style.transform = transform;
   });
-  noPrintElements.forEach(el => (el as HTMLElement).style.display = '');
+  noPrintDisplay.forEach(({ el, display }) => {
+    el.style.display = display;
+  });
 };
 
 export const PRINT_CSS = `
