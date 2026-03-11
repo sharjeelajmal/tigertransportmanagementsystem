@@ -15,11 +15,14 @@ import {
     Phone,
     MapPin,
     FileText,
+    TrendingUp,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
+import CustomDatePicker from "@/components/CustomDatePicker";
 import DeleteModal from "@/components/DeleteModal";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
+import ReportModal from "@/components/customers/ReportModal";
 import { useAuth } from "@/context/AuthContext";
 
 interface Customer {
@@ -41,20 +44,29 @@ export default function CustomersPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Report state
+    const [reportCustomer, setReportCustomer] = useState<{ id: string; name: string } | null>(null);
+
     useEffect(() => {
         fetchCustomers();
-    }, []);
+    }, [startDate, endDate]);
 
     const fetchCustomers = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/customers");
+            const params = new URLSearchParams();
+            if (startDate) params.set("startDate", startDate.toISOString().split('T')[0]);
+            if (endDate) params.set("endDate", endDate.toISOString().split('T')[0]);
+            
+            const res = await fetch(`/api/customers?${params.toString()}`);
             const data = await res.json();
             if (data.success) {
                 setCustomers(data.data);
@@ -89,6 +101,13 @@ export default function CustomersPage() {
         }
     };
 
+    const handleGenerateReport = (startDate: Date, endDate: Date) => {
+        if (!reportCustomer) return;
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+        router.push(`/dashboard/invoices?search=${encodeURIComponent(reportCustomer.name)}&startDate=${startStr}&endDate=${endStr}`);
+    };
+
     const filtered = customers.filter((c) => {
         return (
             c.customerName.toLowerCase().includes(search.toLowerCase()) ||
@@ -99,7 +118,7 @@ export default function CustomersPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, startDate, endDate]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const paginatedData = filtered.slice(
@@ -133,6 +152,15 @@ export default function CustomersPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/dashboard/invoice?type=inbound")}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border-2 border-gray-100 text-gray-700 text-sm font-bold shadow-sm cursor-pointer shrink-0 hover:border-gray-200 transition-all"
+                    >
+                        <FileText size={15} className="text-primary" />
+                        <span className="hidden sm:inline">Invoice</span>
+                    </motion.button>
                     <motion.button
                         whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
                         whileTap={{ scale: 0.97 }}
@@ -213,6 +241,31 @@ export default function CustomersPage() {
                                 boxShadow: search ? "0 0 0 3px rgba(var(--primary-rgb, 181,1,4),0.08)" : "",
                             }}
                         />
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="w-full md:w-56">
+                            <CustomDatePicker
+                                label="From"
+                                value={startDate || ""}
+                                onChange={setStartDate}
+                            />
+                        </div>
+                        <div className="w-full md:w-56">
+                            <CustomDatePicker
+                                label="To"
+                                value={endDate || ""}
+                                onChange={setEndDate}
+                            />
+                        </div>
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={() => { setStartDate(null); setEndDate(null); }}
+                                className="text-xs font-bold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+                            >
+                                <X size={14} /> Clear
+                            </button>
+                        )}
                     </div>
 
                     <div className="ml-auto text-sm text-gray-400 shrink-0">
@@ -328,6 +381,15 @@ export default function CustomersPage() {
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
+                                                    onClick={() => setReportCustomer({ id: c._id, name: c.customerName })}
+                                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-bold cursor-pointer shadow-md"
+                                                >
+                                                    <TrendingUp size={13} />
+                                                    Report
+                                                </motion.button>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
                                                     onClick={() => router.push(`/dashboard/invoice?type=inbound&name=${encodeURIComponent(c.customerName)}&phone=${encodeURIComponent(c.mobileNo || "")}&address=${encodeURIComponent(c.address || "")}`)}
                                                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[var(--primary)] border-2 border-[var(--primary)] text-xs font-bold cursor-pointer hover:bg-red-50 transition-colors"
                                                 >
@@ -408,6 +470,14 @@ export default function CustomersPage() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
+                                            onClick={() => setReportCustomer({ id: c._id, name: c.customerName })}
+                                            className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                                        >
+                                            <TrendingUp size={13} />
+                                            Report
+                                        </motion.button>
+                                        <motion.button
+                                            whileTap={{ scale: 0.95 }}
                                             onClick={() => router.push(`/dashboard/invoice?type=inbound&name=${encodeURIComponent(c.customerName)}&phone=${encodeURIComponent(c.mobileNo || "")}&address=${encodeURIComponent(c.address || "")}`)}
                                             className="flex-1 px-3 py-2 rounded-lg text-primary border-2 border-primary text-xs font-bold shrink-0 cursor-pointer bg-white flex items-center justify-center gap-1.5"
                                         >
@@ -461,6 +531,12 @@ export default function CustomersPage() {
                 isDeleting={isDeleting}
                 title="Remove Customer"
                 description="Are you sure you want to remove this customer? They will be permanently deleted from the system."
+            />
+
+            <ReportModal
+                isOpen={!!reportCustomer}
+                customerName={reportCustomer?.name || ""}
+                onClose={() => setReportCustomer(null)}
             />
         </div>
     );

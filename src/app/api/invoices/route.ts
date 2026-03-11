@@ -8,7 +8,9 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
         const type = searchParams.get('type') || 'All';
-        const date = searchParams.get('date') || '';
+        const startDate = searchParams.get('startDate') || '';
+        const endDate = searchParams.get('endDate') || '';
+        const specificDate = searchParams.get('date') || '';
 
         let query: any = {};
 
@@ -24,10 +26,13 @@ export async function GET(request: NextRequest) {
             query.type = type.toLowerCase();
         }
 
-        if (date) {
-            // Assuming date is in DD/MM/YYYY or similar string format, or just match exact string for now
-            // For a 'pro' management page, we might want to handle date ranges or specific month/day
-            query.invoiceDate = date;
+        if (startDate && endDate) {
+            query.createdAt = { 
+                $gte: new Date(startDate), 
+                $lte: new Date(endDate + 'T23:59:59') 
+            };
+        } else if (specificDate) {
+            query.invoiceDate = specificDate;
         }
 
         const invoices = await Invoice.find(query).sort({ createdAt: -1 }).lean();

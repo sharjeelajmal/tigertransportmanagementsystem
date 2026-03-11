@@ -5,7 +5,23 @@ import Customer from '@/models/Customer';
 export async function GET(req: NextRequest) {
     try {
         await dbConnect();
-        const customers = await Customer.find({}).sort({ createdAt: -1 });
+        const { searchParams } = new URL(req.url);
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+
+        let query: any = {};
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate + 'T23:59:59')
+            };
+        } else if (startDate) {
+            query.createdAt = { $gte: new Date(startDate) };
+        } else if (endDate) {
+            query.createdAt = { $lte: new Date(endDate + 'T23:59:59') };
+        }
+
+        const customers = await Customer.find(query).sort({ createdAt: -1 });
         return NextResponse.json({ success: true, data: customers }, { status: 200 });
     } catch (error: any) {
         console.error('Error fetching customers:', error);

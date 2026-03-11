@@ -48,7 +48,8 @@ export default function InvoicesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState("All");
-    const [dateFilter, setDateFilter] = useState<Date | null>(null);
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
     const [showFilters, setShowFilters] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -59,12 +60,16 @@ export default function InvoicesPage() {
 
     useEffect(() => {
         fetchInvoices();
-    }, []);
+    }, [startDate, endDate]);
 
     const fetchInvoices = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/invoices");
+            const params = new URLSearchParams();
+            if (startDate) params.set("startDate", startDate.toISOString().split('T')[0]);
+            if (endDate) params.set("endDate", endDate.toISOString().split('T')[0]);
+            
+            const res = await fetch(`/api/invoices?${params.toString()}`);
             const data = await res.json();
             if (data.success) {
                 setInvoices(data.data);
@@ -124,20 +129,8 @@ export default function InvoicesPage() {
         const nameMatch = (inv.clientName || inv.partyName || "").toLowerCase().includes(search.toLowerCase());
         const noMatch = inv.invoiceNo.toLowerCase().includes(search.toLowerCase());
         const matchType = typeFilter === "All" || inv.type.toLowerCase() === typeFilter.toLowerCase();
-
-        let matchDate = true;
-        if (dateFilter) {
-            // Simple string match for DD/MM/YYYY
-            const formattedFilterDate = dateFilter.toLocaleDateString('en-GB');
-            matchDate = inv.invoiceDate === formattedFilterDate;
-        }
-
-        return (nameMatch || noMatch) && matchType && matchDate;
+        return (nameMatch || noMatch) && matchType;
     });
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [search, typeFilter, dateFilter]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const paginatedData = filtered.slice(
@@ -145,7 +138,7 @@ export default function InvoicesPage() {
         currentPage * itemsPerPage
     );
 
-    const activeFilters = typeFilter !== "All" || dateFilter !== null;
+    const activeFilters = typeFilter !== "All" || startDate !== null || endDate !== null;
 
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -217,16 +210,23 @@ export default function InvoicesPage() {
                                     onChange={setTypeFilter}
                                     className="w-full sm:w-56"
                                 />
-                                <div className="w-full sm:w-64">
+                                <div className="w-full sm:w-56">
                                     <CustomDatePicker
-                                        label="Specific Date"
-                                        value={dateFilter || ""}
-                                        onChange={(d) => setDateFilter(d)}
+                                        label="From Date"
+                                        value={startDate || ""}
+                                        onChange={(d) => setStartDate(d)}
+                                    />
+                                </div>
+                                <div className="w-full sm:w-56">
+                                    <CustomDatePicker
+                                        label="To Date"
+                                        value={endDate || ""}
+                                        onChange={(d) => setEndDate(d)}
                                     />
                                 </div>
                                 {activeFilters && (
                                     <button
-                                        onClick={() => { setTypeFilter("All"); setDateFilter(null); }}
+                                        onClick={() => { setTypeFilter("All"); setStartDate(null); setEndDate(null); }}
                                         className="mb-3 px-4 py-2 text-xs font-bold text-gray-400 hover:text-[var(--primary)] flex items-center gap-1 transition-colors"
                                     >
                                         <X size={14} /> Reset Filters
@@ -266,7 +266,7 @@ export default function InvoicesPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedData.map((inv, i) => (
+                                paginatedData.map((inv: Invoice, i: number) => (
                                     <motion.tr
                                         key={inv._id}
                                         initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
@@ -342,7 +342,7 @@ export default function InvoicesPage() {
                             <p className="font-bold text-gray-500 text-sm">No invoices found matching your criteria</p>
                         </div>
                     ) : (
-                        paginatedData.map((inv, i) => (
+                        paginatedData.map((inv: Invoice, i: number) => (
                             <motion.div
                                 key={inv._id}
                                 initial={{ opacity: 0, y: 10 }}
