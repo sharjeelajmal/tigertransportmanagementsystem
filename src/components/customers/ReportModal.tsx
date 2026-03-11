@@ -85,21 +85,21 @@ export default function ReportModal({ isOpen, onClose, customerName }: ReportMod
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className={`bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${view === "report" ? "w-full max-w-4xl" : "w-full max-w-md"}`}
                     >
-                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 print:bg-white">
                             <div className="flex items-center gap-2">
                                 {view === "report" && (
-                                    <button onClick={() => setView("selection")} className="p-2 hover:bg-gray-200 rounded-full text-gray-600 mr-1">
+                                    <button onClick={() => setView("selection")} className="p-2 hover:bg-gray-200 rounded-full text-gray-600 mr-1 print:hidden">
                                         <ArrowLeft size={18} />
                                     </button>
                                 )}
-                                <div className="p-2 bg-red-50 rounded-lg text-primary">
+                                <div className="p-2 bg-red-50 rounded-lg text-primary print:hidden">
                                     <FileText size={18} />
                                 </div>
                                 <h3 className="text-lg font-black text-gray-900 tracking-tight">
                                     {view === "selection" ? "Customer Report" : "Report Details"}
                                 </h3>
                             </div>
-                            <button onClick={resetModal} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full text-gray-400 transition-colors">
+                            <button onClick={resetModal} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full text-gray-400 transition-colors print:hidden">
                                 <X size={20} />
                             </button>
                         </div>
@@ -148,8 +148,8 @@ export default function ReportModal({ isOpen, onClose, customerName }: ReportMod
                                         </div>
                                     </div>
 
-                                    <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                                        <table className="w-full text-left text-sm border-collapse">
+                                    <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+                                        <table className="w-full text-left text-sm border-collapse min-w-[600px] md:min-w-full">
                                             <thead>
                                                 <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-100">
                                                     <th className="px-4 py-3">Date</th>
@@ -198,7 +198,7 @@ export default function ReportModal({ isOpen, onClose, customerName }: ReportMod
                             )}
                         </div>
 
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3 print:hidden">
                             {view === "selection" ? (
                                 <>
                                     <button
@@ -238,6 +238,53 @@ export default function ReportModal({ isOpen, onClose, customerName }: ReportMod
                     </motion.div>
                 </div>
             )}
+            <style jsx global>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 10mm;
+                    }
+                    body * {
+                        visibility: hidden !important;
+                    }
+                    .fixed.inset-0.z-\[100\],
+                    .fixed.inset-0.z-\[100\] * {
+                        visibility: visible !important;
+                    }
+                    .fixed.inset-0.z-\[100\] {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        background: white !important;
+                        backdrop-filter: none !important;
+                        padding: 0 !important;
+                    }
+                    .fixed.inset-0.z-\[100\] > div {
+                        box-shadow: none !important;
+                        width: 100% !important;
+                        max-width: none !important;
+                        border: none !important;
+                        transform: none !important;
+                    }
+                    .max-h-\[70vh\] {
+                        max-height: none !important;
+                        overflow: visible !important;
+                    }
+                    .print\:hidden {
+                        display: none !important;
+                    }
+                    /* Ensure table and contents are correctly visible */
+                    table {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                    }
+                    th, td {
+                        border: 1px solid #eee !important;
+                    }
+                }
+            `}</style>
         </AnimatePresence>
     );
 }

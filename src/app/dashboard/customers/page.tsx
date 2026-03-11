@@ -243,15 +243,15 @@ export default function CustomersPage() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="w-full md:w-56">
+                    <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                        <div className="w-full md:w-48 lg:w-56">
                             <CustomDatePicker
                                 label="From"
                                 value={startDate || ""}
                                 onChange={setStartDate}
                             />
                         </div>
-                        <div className="w-full md:w-56">
+                        <div className="w-full md:w-48 lg:w-56">
                             <CustomDatePicker
                                 label="To"
                                 value={endDate || ""}
@@ -261,7 +261,7 @@ export default function CustomersPage() {
                         {(startDate || endDate) && (
                             <button
                                 onClick={() => { setStartDate(null); setEndDate(null); }}
-                                className="text-xs font-bold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+                                className="text-xs font-bold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0 self-start md:self-center"
                             >
                                 <X size={14} /> Clear
                             </button>
@@ -459,19 +459,19 @@ export default function CustomersPage() {
                                             </p>
                                             <p className="text-xs text-gray-400 truncate">{c.mobileNo || "No contact"} &bull; {c.refPerson || "No ref"}</p>
                                         </div>
-                                         <div className="flex items-center gap-2 mt-2 w-full">
+                                         <div className="flex flex-wrap items-center gap-2 mt-2 w-full">
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => router.push(`/dashboard/customers/${c._id}`)}
-                                            className="flex-1 px-3 py-2 rounded-lg text-white text-xs font-bold shrink-0 cursor-pointer bg-primary shadow-md flex items-center justify-center gap-1.5"
+                                            className="flex-1 min-w-[100px] px-3 py-2 rounded-lg text-white text-xs font-bold shrink-0 cursor-pointer bg-primary shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             <Eye size={13} />
-                                            View Profile
+                                            View
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setReportCustomer({ id: c._id, name: c.customerName })}
-                                            className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                                            className="flex-1 min-w-[100px] px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             <TrendingUp size={13} />
                                             Report
@@ -479,7 +479,7 @@ export default function CustomersPage() {
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => router.push(`/dashboard/invoice?type=inbound&name=${encodeURIComponent(c.customerName)}&phone=${encodeURIComponent(c.mobileNo || "")}&address=${encodeURIComponent(c.address || "")}`)}
-                                            className="flex-1 px-3 py-2 rounded-lg text-primary border-2 border-primary text-xs font-bold shrink-0 cursor-pointer bg-white flex items-center justify-center gap-1.5"
+                                            className="flex-1 min-w-[100px] px-3 py-2 rounded-lg text-primary border-2 border-primary text-xs font-bold shrink-0 cursor-pointer bg-white flex items-center justify-center gap-1.5"
                                         >
                                             <FileText size={13} />
                                             Invoice
