@@ -167,24 +167,6 @@ export default function InvoicesPage() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto p-3 sm:p-4">
-            {/* ── Page Header ── */}
-            <motion.div
-                initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-                <div>
-                    <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tight">Invoice Archive</h1>
-                    <p className="text-gray-400 text-xs md:text-sm font-medium mt-1">Manage and track all system-generated invoices</p>
-                </div>
-                <motion.button
-                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => router.push("/dashboard")}
-                    className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-lg"
-                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
-                >
-                    <Plus size={18} /><span>New Invoice</span>
-                </motion.button>
-            </motion.div>
 
             {/* ── Main Container ── */}
             <motion.div

@@ -38,6 +38,13 @@ const CustomerProfileHeader = ({ customer, activeTab, customerId, onEditClick }:
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={() => router.back()}
+                        className="bg-white border-2 border-gray-100 text-gray-600 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 hover:border-gray-200 transition-all cursor-pointer shadow-sm flex-1 sm:flex-initial justify-center"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                        Back
+                    </button>
                     {activeTab === 'profile' && onEditClick && (
                         <button onClick={onEditClick}
                             className="bg-white border-2 border-gray-100 text-gray-600 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 hover:border-gray-200 transition-all cursor-pointer shadow-sm flex-1 sm:flex-initial justify-center">
