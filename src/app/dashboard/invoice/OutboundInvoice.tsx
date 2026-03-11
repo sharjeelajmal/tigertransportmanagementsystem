@@ -16,6 +16,12 @@ interface Props {
 }
 
 export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, updItem, delRow, addRow, sm, subtotal, netTotal, delPage, pagesCount }: Props) {
+    const onEnter = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addRow(page.id);
+        }
+    };
     return (
         <div className="inv-outer" style={{ position: "relative" }}>
             {pagesCount > 1 && <button className="no-print" onClick={() => delPage(page.id)} style={delPSt}>✕ Remove Page</button>}
@@ -105,12 +111,17 @@ export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS,
                             <AnimatePresence mode="popLayout">
                                 {page.items.map((it: any, idx: number) => (
                                     <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 36, background: idx % 2 === 1 ? `rgba(107,12,16,0.03)` : "#fff" }}>
-                                        <td style={tdc}><span style={{ fontSize: 10, color: "#ccc", fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span><button onClick={() => delRow(page.id, it.id)} className="no-print" style={delRSt}>×</button></td>
-                                        <td style={tdl}><input style={inp} value={it.cargoDetails} onChange={e => updItem(page.id, it.id, "cargoDetails", e.target.value)} placeholder="Service description..." /></td>
-                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} value={it.vehicle} onChange={e => updItem(page.id, it.id, "vehicle", e.target.value)} /></td>
-                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.rate || ""} onChange={e => updItem(page.id, it.id, "rate", +e.target.value)} /></td>
-                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.qty || ""} onChange={e => updItem(page.id, it.id, "qty", +e.target.value)} /></td>
-                                        <td style={{ ...tdc, borderRight: "1px solid #eee" }}><input style={{ ...inp, textAlign: "center", fontWeight: 800, color: M }} type="number" value={it.amount || ""} onChange={e => updItem(page.id, it.id, "amount", +e.target.value)} /></td>
+                                        <td style={tdc}>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                                                <span style={{ fontSize: 9, color: "#ccc", fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span>
+                                                <button onClick={() => delRow(page.id, it.id)} className="no-print" style={delRSt}>✕</button>
+                                            </div>
+                                        </td>
+                                        <td style={tdl}><input style={inp} value={it.cargoDetails} onChange={e => updItem(page.id, it.id, "cargoDetails", e.target.value)} onKeyDown={onEnter} placeholder="Service description..." /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} value={it.vehicle} onChange={e => updItem(page.id, it.id, "vehicle", e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.rate || ""} onChange={e => updItem(page.id, it.id, "rate", +e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.qty || ""} onChange={e => updItem(page.id, it.id, "qty", +e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={{ ...tdc, borderRight: "1px solid #eee" }}><input style={{ ...inp, textAlign: "center", fontWeight: 800, color: M }} type="number" value={it.amount || ""} onChange={e => updItem(page.id, it.id, "amount", +e.target.value)} onKeyDown={onEnter} /></td>
                                     </motion.tr>
                                 ))}
                             </AnimatePresence>
@@ -180,4 +191,4 @@ const tdl: React.CSSProperties = { fontSize: 10, color: "#444", padding: "0 12px
 const tdc: React.CSSProperties = { ...tdl, textAlign: "center", position: "relative", borderLeft: "1px solid #eee" };
 const inp: React.CSSProperties = { width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: "'Montserrat',sans-serif", fontSize: 10, color: "#444", cursor: "pointer" };
 const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 9, padding: "5px 12px", border: "1.5px dashed rgba(107,12,16,0.25)", borderRadius: 7, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "#ccc" };
-const delRSt: React.CSSProperties = { position: "absolute", left: -22, top: "50%", transform: "translateY(-50%)", background: "#fee2e2", border: "none", borderRadius: 4, color: "#6B0C10", cursor: "pointer", fontSize: 13, padding: "1px 4px" };
+const delRSt: React.CSSProperties = { background: "#fee2e2", border: "none", borderRadius: 4, color: "#6B0C10", cursor: "pointer", fontSize: 10, padding: "2px 6px", fontWeight: "bold" };

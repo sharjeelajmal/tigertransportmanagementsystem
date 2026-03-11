@@ -1,5 +1,5 @@
-import React from "react";
-import { FilePlus, Save, CheckCircle2, Printer } from "lucide-react";
+import { FilePlus, Save, CheckCircle2, Printer, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { R1 } from "./InvoiceUtils";
 
 interface Props {
@@ -11,9 +11,12 @@ interface Props {
 }
 
 export default function InvoiceActions({ type, addPage, handleSave, saving, saved }: Props) {
+    const router = useRouter();
     return (
         <div className="action-bar no-print" style={{ display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "hidden", justifyContent: "flex-start", alignItems: "center", background: "#fff", padding: "10px 14px", borderRadius: 14, boxShadow: "0 4px 24px rgba(0,0,0,0.13)", marginBottom: 20, position: "sticky", top: 8, zIndex: 100, maxWidth: "100%", whiteSpace: "nowrap" }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: R1, background: "rgba(107,12,16,0.08)", padding: "3px 11px", borderRadius: 20, letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0 }}>{type}</span>
+            <ABtn icon={<ArrowLeft size={13} />} label="Back" onClick={() => router.back()} />
+            <div style={{ width: 1, height: 26, background: "#eee", flexShrink: 0 }} />
+            <span style={{ fontSize: 9, fontWeight: 800, color: R1, background: "rgba(107,12,16,0.08)", padding: "3px 11px", borderRadius: 20, letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0 }}>{type === "inbound" ? "CUSTOMER" : type}</span>
             <div style={{ width: 1, height: 26, background: "#eee", flexShrink: 0 }} />
             <ABtn icon={<FilePlus size={13} />} label="Add Page" onClick={addPage} />
             <div style={{ width: 1, height: 26, background: "#eee", flexShrink: 0 }} />

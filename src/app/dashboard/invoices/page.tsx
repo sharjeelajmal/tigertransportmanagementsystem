@@ -21,6 +21,7 @@ import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import Pagination from "@/components/Pagination";
 import DeleteModal from "@/components/DeleteModal";
+import { useAuth } from "@/context/AuthContext";
 
 interface Invoice {
     _id: string;
@@ -35,13 +36,14 @@ interface Invoice {
 
 const typeOptions = [
     { value: "All", label: "All Types" },
-    { value: "Inbound", label: "Inbound" },
+    { value: "Inbound", label: "Customer" },
     { value: "Outbound", label: "Outbound" },
     { value: "Allocation", label: "Outsider" },
 ];
 
 export default function InvoicesPage() {
     const router = useRouter();
+    const { isAdmin } = useAuth();
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -298,7 +300,7 @@ export default function InvoicesPage() {
                                         </td>
                                         <td className="px-4 sm:px-8 py-5">
                                             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase border tracking-wider ${getTypeColor(inv.type)}`}>
-                                                {getTypeIcon(inv.type)} {inv.type === 'allocation' ? 'outsider' : inv.type}
+                                                {getTypeIcon(inv.type)} {inv.type === 'allocation' ? 'outsider' : inv.type === 'inbound' ? 'customer' : inv.type}
                                             </span>
                                         </td>
                                         <td className="px-4 sm:px-8 py-5">
@@ -327,14 +329,16 @@ export default function InvoicesPage() {
                                                 >
                                                     <Download size={16} />
                                                 </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                                    onClick={() => handleDelete(inv._id)}
-                                                    className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 hover:shadow-lg transition-all cursor-pointer"
-                                                    title="Delete Invoice"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </motion.button>
+                                                {isAdmin && (
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                                                        onClick={() => handleDelete(inv._id)}
+                                                        className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 hover:shadow-lg transition-all cursor-pointer"
+                                                        title="Delete Invoice"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </motion.button>
+                                                )}
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -371,7 +375,7 @@ export default function InvoicesPage() {
                                         <p className="mt-1 text-[11px] text-gray-500 font-medium">{inv.clientName || inv.partyName || "-"}</p>
                                     </div>
                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border tracking-wider ${getTypeColor(inv.type)}`}>
-                                        {getTypeIcon(inv.type)} {inv.type === 'allocation' ? 'outsider' : inv.type}
+                                        {getTypeIcon(inv.type)} {inv.type === 'allocation' ? 'outsider' : inv.type === 'inbound' ? 'customer' : inv.type}
                                     </span>
                                 </div>
 
@@ -404,13 +408,15 @@ export default function InvoicesPage() {
                                     >
                                         <Download size={15} />
                                     </button>
-                                    <button
-                                        onClick={() => handleDelete(inv._id)}
-                                        className="h-10 w-10 rounded-xl border border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-200 transition-colors flex items-center justify-center"
-                                        title="Delete Invoice"
-                                    >
-                                        <Trash2 size={15} />
-                                    </button>
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleDelete(inv._id)}
+                                            className="h-10 w-10 rounded-xl border border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-200 transition-colors flex items-center justify-center"
+                                            title="Delete Invoice"
+                                        >
+                                            <Trash2 size={15} />
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         ))

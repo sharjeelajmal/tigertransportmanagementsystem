@@ -16,6 +16,43 @@ interface Props {
 }
 
 export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, updItem, delRow, addRow, sm, subtotal, netTotal, delPage, pagesCount }: Props) {
+    const [allCustomers, setAllCustomers] = React.useState<any[]>([]);
+    const [suggestions, setSuggestions] = React.useState<any[]>([]);
+    const [showSugg, setShowSugg] = React.useState(false);
+
+    React.useEffect(() => {
+        fetch("/api/customers").then(r => r.json()).then(data => {
+            if (data.success) setAllCustomers(data.data);
+        });
+    }, []);
+
+    const handleNameChange = (val: string) => {
+        sm("clientName", val);
+        if (val.length > 0) {
+            const filtered = allCustomers.filter(c =>
+                c.customerName.toLowerCase().includes(val.toLowerCase())
+            );
+            setSuggestions(filtered);
+            setShowSugg(true);
+        } else {
+            setSuggestions([]);
+            setShowSugg(false);
+        }
+    };
+
+    const selectSugg = (c: any) => {
+        sm("clientName", c.customerName);
+        sm("clientPhone", c.mobileNo || "");
+        sm("clientAddress", c.address || "");
+        setShowSugg(false);
+    };
+
+    const onEnter = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addRow(page.id);
+        }
+    };
     return (
         <div className="inv-outer" style={{ position: "relative" }}>
             {pagesCount > 1 && <button className="no-print" onClick={() => delPage(page.id)} style={delPSt}>✕ Remove Page</button>}
@@ -52,7 +89,7 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                         <div style={{ fontSize: 58, fontWeight: 900, color: "#f0e8e8", lineHeight: 1, letterSpacing: 1, position: "relative" }}>
                             <span style={{ position: "relative", zIndex: 1, color: M }}>INVOICE</span>
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: "#aaa", letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 2 }}>INBOUND</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "#aaa", letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 2 }}>CUSTOMER</div>
                     </div>
                 </div>
 
@@ -73,8 +110,25 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                 <div style={{ paddingLeft: 36, paddingRight: 34, paddingTop: 16, paddingBottom: 12, display: "flex", gap: 12, position: "relative", zIndex: 2 }}>
                     <div style={{ flex: 1.8, borderLeft: `4px solid ${M}`, paddingLeft: 14 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: M, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 3 }}>Invoice To</div>
-                        <input type="text" value={meta.clientName} onChange={e => sm("clientName", e.target.value)} placeholder="CLIENT NAME"
-                            style={{ fontFamily: "inherit", fontSize: 18, fontWeight: 900, color: "#111", background: "transparent", border: "none", outline: "none", width: "100%", cursor: "pointer", display: "block" }} />
+                        <div style={{ position: "relative" }}>
+                            <input type="text" value={meta.clientName} onChange={e => handleNameChange(e.target.value)} onFocus={() => meta.clientName && setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 200)} placeholder="CLIENT NAME"
+                                style={{ fontFamily: "inherit", fontSize: 18, fontWeight: 900, color: "#111", background: "transparent", border: "none", outline: "none", width: "100%", cursor: "pointer", display: "block" }} />
+                            
+                            {/* Suggestions Dropdown */}
+                            <AnimatePresence>
+                                {showSugg && suggestions.length > 0 && (
+                                    <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                        style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #eee", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, maxHeight: 150, overflowY: "auto" }} className="no-print">
+                                        {suggestions.map(c => (
+                                            <div key={c._id} onClick={() => selectSugg(c)} style={{ padding: "8px 12px", fontSize: 12, borderBottom: "1px solid #f9f9f9", cursor: "pointer", display: "flex", justifyContent: "space-between", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                                                <span style={{ fontWeight: 700 }}>{c.customerName}</span>
+                                                <span style={{ fontSize: 10, color: "#999" }}>{c.mobileNo}</span>
+                                            </div>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                         <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
                             <CField icon="📞" value={meta.clientPhone} onChange={v => sm("clientPhone", v)} />
                             <CField icon="📍" value={meta.clientAddress} onChange={v => sm("clientAddress", v)} wide />
@@ -101,12 +155,17 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                             <AnimatePresence mode="popLayout">
                                 {page.items.map((it: any, idx: number) => (
                                     <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 36, background: idx % 2 === 1 ? `rgba(107,12,16,0.03)` : "#fff" }}>
-                                        <td style={tdc}><span style={{ fontSize: 10, color: "#ccc", fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span><button onClick={() => delRow(page.id, it.id)} className="no-print" style={delRSt}>×</button></td>
-                                        <td style={tdl}><input style={inp} value={it.cargoDetails} onChange={e => updItem(page.id, it.id, "cargoDetails", e.target.value)} placeholder="Cargo description..." /></td>
-                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} value={it.vehicle} onChange={e => updItem(page.id, it.id, "vehicle", e.target.value)} /></td>
-                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.rate || ""} onChange={e => updItem(page.id, it.id, "rate", +e.target.value)} /></td>
-                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.qty || ""} onChange={e => updItem(page.id, it.id, "qty", +e.target.value)} /></td>
-                                        <td style={{ ...tdc, borderRight: "1px solid #eee" }}><input style={{ ...inp, textAlign: "center", fontWeight: 800, color: M }} type="number" value={it.amount || ""} onChange={e => updItem(page.id, it.id, "amount", +e.target.value)} /></td>
+                                        <td style={tdc}>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                                                <span style={{ fontSize: 9, color: "#ccc", fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span>
+                                                <button onClick={() => delRow(page.id, it.id)} className="no-print" style={delRSt}>✕</button>
+                                            </div>
+                                        </td>
+                                        <td style={tdl}><input style={inp} value={it.cargoDetails} onChange={e => updItem(page.id, it.id, "cargoDetails", e.target.value)} onKeyDown={onEnter} placeholder="Cargo description..." /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} value={it.vehicle} onChange={e => updItem(page.id, it.id, "vehicle", e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.rate || ""} onChange={e => updItem(page.id, it.id, "rate", +e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.qty || ""} onChange={e => updItem(page.id, it.id, "qty", +e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={{ ...tdc, borderRight: "1px solid #eee" }}><input style={{ ...inp, textAlign: "center", fontWeight: 800, color: M }} type="number" value={it.amount || ""} onChange={e => updItem(page.id, it.id, "amount", +e.target.value)} onKeyDown={onEnter} /></td>
                                     </motion.tr>
                                 ))}
                             </AnimatePresence>
@@ -176,4 +235,4 @@ const tdl: React.CSSProperties = { fontSize: 10, color: "#444", padding: "0 12px
 const tdc: React.CSSProperties = { ...tdl, textAlign: "center", position: "relative", borderLeft: "1px solid #eee" };
 const inp: React.CSSProperties = { width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: "'Montserrat',sans-serif", fontSize: 10, color: "#444", cursor: "pointer" };
 const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 9, padding: "5px 12px", border: "1.5px dashed rgba(107,12,16,0.25)", borderRadius: 7, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "#ccc" };
-const delRSt: React.CSSProperties = { position: "absolute", left: -22, top: "50%", transform: "translateY(-50%)", background: "#fee2e2", border: "none", borderRadius: 4, color: "#6B0C10", cursor: "pointer", fontSize: 13, padding: "1px 4px" };
+const delRSt: React.CSSProperties = { background: "#fee2e2", border: "none", borderRadius: 4, color: "#6B0C10", cursor: "pointer", fontSize: 10, padding: "2px 6px", fontWeight: "bold" };

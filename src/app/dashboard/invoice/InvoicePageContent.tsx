@@ -71,7 +71,19 @@ export default function InvoicePageContent() {
             });
             return;
         }
-        setMeta(m => ({ ...m, billingDate: today(), invoiceDate: today(), invoiceNo: genNo() }));
+        const nameParam = sp.get("name");
+        const phoneParam = sp.get("phone");
+        const addressParam = sp.get("address");
+
+        setMeta(m => ({
+            ...m,
+            billingDate: today(),
+            invoiceDate: today(),
+            invoiceNo: genNo(),
+            clientName: nameParam || m.clientName,
+            clientPhone: phoneParam || m.clientPhone,
+            clientAddress: addressParam || m.clientAddress
+        }));
         setPages([{ id: "p1", items: [makeItem()] }]);
     }, [invoiceId, sp, type]);
 
@@ -101,7 +113,22 @@ export default function InvoicePageContent() {
         return { ...p, items: [...p.items, makeItem()] };
     }));
     const delRow = (pid: string, iid: string) => setPages(ps => ps.map(p => p.id === pid && p.items.length > 1 ? { ...p, items: p.items.filter(i => i.id !== iid) } : p));
-    const updItem = <K extends keyof InvoiceItem>(pid: string, iid: string, k: K, v: InvoiceItem[K]) => setPages(ps => ps.map(p => p.id !== pid ? p : { ...p, items: p.items.map(i => i.id === iid ? { ...i, [k]: v } : i) }));
+    const updItem = <K extends keyof InvoiceItem>(pid: string, iid: string, k: K, v: InvoiceItem[K]) => setPages(ps => ps.map(p => {
+        if (p.id !== pid) return p;
+        return {
+            ...p,
+            items: p.items.map(i => {
+                if (i.id !== iid) return i;
+                const updated = { ...i, [k]: v };
+                if (k === "rate" || k === "qty") {
+                    const r = k === "rate" ? (v as number) : i.rate;
+                    const q = k === "qty" ? (v as number) : i.qty;
+                    updated.amount = (r || 0) * (q || 0);
+                }
+                return updated;
+            })
+        };
+    }));
 
     const handleSave = async () => {
         if (invoiceId) {

@@ -29,6 +29,7 @@ const navGroups = [
         label: "Management",
         items: [
             { name: "Staff", icon: Users, path: "/dashboard/staff" },
+            { name: "Customers", icon: Users, path: "/dashboard/customers" },
             { name: "Outsiders", icon: Users, path: "/dashboard/outsiders" },
             { name: "Allocations", icon: Banknote, path: "/dashboard/outsiders/allocations" },
             { name: "Vehicles", icon: Truck, path: "/dashboard/vehicles" },
@@ -321,7 +322,7 @@ export default function Sidebar() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="fixed inset-0 z-50 bg-black/50 md:hidden"
+                            className="fixed inset-0 z-[2000] bg-black/50 md:hidden"
                             onClick={() => setMobileOpen(false)}
                         />
 
@@ -332,7 +333,7 @@ export default function Sidebar() {
                             animate={{ x: 0 }}
                             exit={{ x: "-100%" }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed top-0 left-0 h-full w-72 z-50 flex flex-col md:hidden overflow-hidden"
+                            className="fixed top-0 left-0 h-full w-72 z-[2000] flex flex-col md:hidden overflow-hidden"
                             style={sidebarStyle}
                         >
                             {/* Drawer Header */}

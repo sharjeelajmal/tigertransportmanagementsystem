@@ -63,7 +63,7 @@ export default function DashboardPage() {
                         onClick={() => window.location.href = '/dashboard/invoice?type=inbound'}
                         className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-white text-[#800000] border-2 border-[#800000] rounded-lg shadow-sm hover:bg-red-50 transition-all text-[10px] md:text-xs font-bold cursor-pointer active:scale-95"
                     >
-                        <Printer size={14} className="md:w-4 md:h-4" /> Inbound
+                        <Printer size={14} className="md:w-4 md:h-4" /> Customer
                     </button>
                     <button
                         onClick={() => window.location.href = '/dashboard/invoice?type=outbound'}

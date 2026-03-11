@@ -135,7 +135,7 @@ export default function LedgerPage() {
                         className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
                         <p className="text-xs font-black text-gray-900 uppercase tracking-wider mb-4">Cash Flow Breakdown</p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <CashFlowItem label="Outsider Income" amount={data.totalCashIn} color="#10B981" />
+                            <CashFlowItem label="Customer Income" amount={data.totalCashIn} color="#10B981" />
                             <CashFlowItem label="Payroll Paid" amount={data.totalPayrollOut} color="#4F46E5" />
                             <CashFlowItem label="Expenses Paid" amount={data.totalExpenseOut} color="var(--primary)" />
                             <CashFlowItem label="Pending Payables" amount={data.totalPayables} color="#F59E0B" />

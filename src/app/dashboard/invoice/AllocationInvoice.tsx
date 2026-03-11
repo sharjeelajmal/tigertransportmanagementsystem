@@ -12,6 +12,12 @@ interface Props {
 }
 
 export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, updItem, delRow, addRow, sm, subtotal, remaining, delPage, pagesCount }: Props) {
+    const onEnter = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addRow(page.id);
+        }
+    };
     return (
         <div className="inv-outer" style={{ position: "relative" }}>
             {pagesCount > 1 && <button className="no-print" onClick={() => delPage(page.id)} style={delPSt}>✕ Remove Page</button>}
@@ -103,17 +109,17 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                             {page.items.map((item, i) => (
                                 <motion.div layout key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                     style={{ display: "flex", borderBottom: "1px solid #f0f0f0", minHeight: 34, background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
-                                    <div style={{ width: "9%", textAlign: "center", borderRight: "1px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#ccc", position: "relative" }}>
-                                        {String(i + 1).padStart(2, "0")}
+                                    <div style={{ width: "9%", textAlign: "center", borderRight: "1px solid #f0f0f0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                                        <span style={{ fontSize: 10, fontWeight: 600, color: "#ccc" }}>{String(i + 1).padStart(2, "0")}</span>
                                         <button onClick={() => delRow(page.id, item.id)} className="no-print"
-                                            style={{ position: "absolute", left: -24, top: "50%", transform: "translateY(-50%)", background: "#fee2e2", border: "none", borderRadius: 4, padding: "1px 4px", color: R1, cursor: "pointer", fontSize: 13 }}>×</button>
+                                            style={{ background: "#fee2e2", border: "none", borderRadius: 4, padding: "2px 6px", color: R1, cursor: "pointer", fontSize: 10, fontWeight: "bold", marginTop: 2 }}>✕</button>
                                     </div>
                                     <div style={{ flex: 1, borderRight: "1px solid #f0f0f0", padding: "0 14px", display: "flex", alignItems: "center" }}>
-                                        <input type="text" value={item.cargoDetails} onChange={e => updItem(page.id, item.id, "cargoDetails", e.target.value)} placeholder="Enter details…"
+                                        <input type="text" value={item.cargoDetails} onChange={e => updItem(page.id, item.id, "cargoDetails", e.target.value)} onKeyDown={onEnter} placeholder="Enter details…"
                                             style={{ fontFamily: "inherit", fontSize: 11, fontWeight: 500, color: "#333", background: "transparent", border: "none", outline: "none", width: "100%", cursor: "pointer" }} />
                                     </div>
                                     <div style={{ width: "20%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        <input type="number" value={item.amount || ""} onChange={e => updItem(page.id, item.id, "amount", +e.target.value || 0)} placeholder="Amount"
+                                        <input type="number" value={item.amount || ""} onChange={e => updItem(page.id, item.id, "amount", +e.target.value || 0)} onKeyDown={onEnter} placeholder="Amount"
                                             style={{ fontFamily: "inherit", fontSize: 11, fontWeight: 700, color: "#333", background: "transparent", border: "none", outline: "none", textAlign: "center", width: "90%", cursor: "pointer" }} />
                                     </div>
                                 </motion.div>
