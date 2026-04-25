@@ -42,8 +42,10 @@ function buildInvoiceNarration(billingDate: string | undefined): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+
     try {
         await dbConnect();
+        console.log("Forcing model to load in live server:", Outsider.modelName);
 
         let invoicesSynced = 0;
         let invoicesSkipped = 0;
