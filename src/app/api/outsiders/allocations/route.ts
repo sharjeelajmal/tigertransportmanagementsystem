@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import OutsiderAllocation from '@/models/OutsiderAllocation';
 import Outsider from '@/models/Outsider';
+import LedgerEntry from '@/models/LedgerEntry';
 
 export async function GET(req: NextRequest) {
     try {
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
         await dbConnect();
         const body = await req.json();
 
-        // Calculate status automatically if not provided accurately
+        // Calculate payment status automatically if not provided accurately
         let paymentStatus = 'Unpaid';
         if (body.paidAmount >= body.totalAmount) {
             paymentStatus = 'Paid';
@@ -86,8 +87,56 @@ export async function POST(req: NextRequest) {
 
         const allocation = await OutsiderAllocation.create({
             ...body,
-            paymentStatus: body.paymentStatus || paymentStatus
+            paymentStatus: body.paymentStatus || paymentStatus,
         });
+
+        // ── Auto-push Credit entry to LedgerEntry ─────────────────────────────
+        // When an outsider allocation (vendor bill) is created, our payable to
+        // that outsider increases → Credit entry in their ledger.
+        try {
+            // Fetch outsider name from the Outsider collection using the ObjectId
+            const outsiderDoc = await Outsider.findById(body.outsider).lean() as any;
+            const outsiderName: string = (outsiderDoc?.outsiderName || '').trim();
+
+            if (outsiderName) {
+                let entryDate = new Date();
+                const rawDate = body.allocationDate || allocation.createdAt;
+                if (rawDate) {
+                    const parsed = new Date(rawDate);
+                    if (!isNaN(parsed.getTime())) entryDate = parsed;
+                }
+
+                // Build a meaningful doc number
+                const docNo: string =
+                    (allocation as any).allocationNo ||
+                    `ALLOC-${String(allocation._id).slice(-6).toUpperCase()}`;
+
+                // Build narration from vehicle info
+                const vehicleNo: string =
+                    body.vehicles?.[0]?.vehicleNo || 'N/A';
+                const narration = `Truck No: ${vehicleNo} — Outsider Allocation`;
+
+                await LedgerEntry.create({
+                    partyName: outsiderName,
+                    partyType: 'Outsider',
+                    entryType: 'Credit',   // payable to outsider → Credit
+                    date: entryDate,
+                    docNo,
+                    narration,
+                    amount: Math.max(0, Number(allocation.totalAmount) || 0),
+                    sourceType: 'Allocation',
+                    sourceId: String(allocation._id),
+                });
+
+                console.log(`[Ledger] Credit entry created → Outsider: "${outsiderName}" | Doc: ${docNo} | Amount: ${allocation.totalAmount}`);
+            } else {
+                console.warn('[Ledger] Skipped allocation ledger entry — outsider not found for ID:', body.outsider);
+            }
+        } catch (ledgerErr) {
+            // Ledger failure must NOT break the allocation response
+            console.error('[Ledger] Allocation auto-credit failed (non-critical):', ledgerErr);
+        }
+        // ──────────────────────────────────────────────────────────────────────
 
         return NextResponse.json({ success: true, data: allocation }, { status: 201 });
     } catch (error: any) {
