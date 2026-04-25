@@ -73,7 +73,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
     return (
         <>
             {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto print:hidden">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -166,7 +166,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
             </div>
 
             {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-gray-50">
+            <div className="md:hidden divide-y divide-gray-50 print:hidden">
                 {paginated.length === 0 ? (
                     <div className="px-4 py-16 text-center text-gray-400 text-sm">
                         No transactions found
@@ -228,7 +228,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="border-t border-gray-100 bg-white">
+                <div className="border-t border-gray-100 bg-white print:hidden">
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -238,7 +238,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
             )}
 
             {/* Footer */}
-            <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between print:hidden">
                 <p className="text-xs text-gray-400">
                     Showing{" "}
                     <span className="font-bold text-gray-600">{paginated.length}</span> of{" "}
@@ -247,6 +247,43 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                 <p className="text-[10px] text-gray-400">
                     Page {currentPage} of {totalPages || 1}
                 </p>
+            </div>
+
+            {/* Print Table (Full Data) */}
+            <div className="hidden print:block w-full">
+                <table className="w-full border-collapse border border-gray-900 text-xs text-gray-900">
+                    <thead>
+                        <tr className="border-b-2 border-gray-900 bg-gray-100 uppercase font-black">
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Date</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Doc No</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Narration</th>
+                            <th className="px-2 py-1.5 text-right border border-gray-900">Debit</th>
+                            <th className="px-2 py-1.5 text-right border border-gray-900">Credit</th>
+                            <th className="px-2 py-1.5 text-right border border-gray-900">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {entries.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="px-2 py-4 text-center">No transactions found</td>
+                            </tr>
+                        ) : entries.map((row, i) => {
+                            const balPositive = row.balance >= 0;
+                            return (
+                                <tr key={row._id + i} className="border-b border-gray-900 break-inside-avoid">
+                                    <td className="px-2 py-1 border border-gray-900 whitespace-nowrap">{fmtDate(row.date)}</td>
+                                    <td className="px-2 py-1 border border-gray-900 font-bold whitespace-nowrap">{row.docNo}</td>
+                                    <td className="px-2 py-1 border border-gray-900">{row.narration}</td>
+                                    <td className="px-2 py-1 border border-gray-900 text-right">{fmt(row.debit)}</td>
+                                    <td className="px-2 py-1 border border-gray-900 text-right">{fmt(row.credit)}</td>
+                                    <td className="px-2 py-1 border border-gray-900 text-right font-black">
+                                        {Math.abs(row.balance).toLocaleString()} <span className="text-[10px]">{balPositive ? "Dr" : "Cr"}</span>
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
             </div>
         </>
     );
@@ -265,7 +302,7 @@ function GeneralTransactionTable({ transactions }: { transactions: GeneralTransa
     return (
         <>
             {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto print:hidden">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -330,7 +367,7 @@ function GeneralTransactionTable({ transactions }: { transactions: GeneralTransa
             </div>
 
             {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-gray-50">
+            <div className="md:hidden divide-y divide-gray-50 print:hidden">
                 {paginated.length === 0 ? (
                     <div className="px-4 py-16 text-center text-gray-400 text-sm">No transactions found</div>
                 ) : (
@@ -368,7 +405,7 @@ function GeneralTransactionTable({ transactions }: { transactions: GeneralTransa
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="border-t border-gray-100 bg-white">
+                <div className="border-t border-gray-100 bg-white print:hidden">
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -378,12 +415,42 @@ function GeneralTransactionTable({ transactions }: { transactions: GeneralTransa
             )}
 
             {/* Footer */}
-            <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <div className="px-4 md:px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between print:hidden">
                 <p className="text-xs text-gray-400">
                     Showing <span className="font-bold text-gray-600">{paginated.length}</span> of{" "}
                     <span className="font-bold text-gray-600">{transactions.length}</span> transactions
                 </p>
                 <p className="text-[10px] text-gray-400">Page {currentPage} of {totalPages || 1}</p>
+            </div>
+
+            {/* Print Table (Full Data) */}
+            <div className="hidden print:block w-full">
+                <table className="w-full border-collapse border border-gray-900 text-xs text-gray-900">
+                    <thead>
+                        <tr className="border-b-2 border-gray-900 bg-gray-100 uppercase font-black">
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Type</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Description</th>
+                            <th className="px-2 py-1.5 text-right border border-gray-900">Amount</th>
+                            <th className="px-2 py-1.5 text-right border border-gray-900">Date</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {transactions.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} className="px-2 py-4 text-center">No transactions found</td>
+                            </tr>
+                        ) : transactions.map((t, i) => (
+                            <tr key={t._id + i} className="border-b border-gray-900 break-inside-avoid">
+                                <td className="px-2 py-1 border border-gray-900 whitespace-nowrap font-bold">{t.type}</td>
+                                <td className="px-2 py-1 border border-gray-900">{t.description}</td>
+                                <td className="px-2 py-1 border border-gray-900 text-right font-black">{t.amount.toLocaleString()}/-</td>
+                                <td className="px-2 py-1 border border-gray-900 text-right whitespace-nowrap">{fmtDate(t.date)}</td>
+                                <td className="px-2 py-1 border border-gray-900 uppercase font-bold">{t.status}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </>
     );
@@ -403,11 +470,10 @@ export default function LedgerTransactions(props: LedgerTransactionsProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
-            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.06)" }}
+            className="bg-white rounded-2xl border border-gray-100 print:border-none print:rounded-none overflow-hidden shadow-[0_2px_20px_rgba(0,0,0,0.06)] print:shadow-none"
         >
             {/* Header */}
-            <div className="px-4 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-4 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between print:hidden">
                 <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">{title}</h2>
                 <span className="text-xs text-gray-400 font-medium">{count} entries</span>
             </div>

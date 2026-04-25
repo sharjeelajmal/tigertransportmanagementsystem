@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, PlusCircle, Users, BookOpen, X } from "lucide-react";
+import { ArrowLeft, PlusCircle, Users, BookOpen, X, Printer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/Loader";
 import CustomDatePicker from "@/components/CustomDatePicker";
@@ -206,12 +206,50 @@ export default function LedgerPage() {
 
     // ─── Render ──────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-5 max-w-7xl mx-auto">
+        <div className="space-y-5 max-w-7xl mx-auto ledger-print-container">
+            {/* ── Print Styles ── */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    @page { size: A4; margin: 15mm; }
+                    body * { visibility: hidden !important; }
+                    .ledger-print-container, .ledger-print-container * { visibility: visible !important; }
+                    .ledger-print-container {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    .print\\:hidden, .print\\:hidden * { display: none !important; visibility: hidden !important; }
+                }
+            ` }} />
+
+            {/* ── Print Only Header ── */}
+            <div className="hidden print:block border-b-2 border-gray-900 pb-4 mb-4">
+                <div className="text-center mb-4">
+                    <h1 className="text-2xl font-black uppercase tracking-widest text-gray-900">TTS Transport</h1>
+                    <p className="text-sm font-bold text-gray-600 mt-1 uppercase">
+                        {selectedParty ? `${selectedParty.value} Ledger` : "General Ledger Overview"}
+                    </p>
+                </div>
+                <div className="flex justify-between items-end text-xs font-medium text-gray-800">
+                    <div>
+                        <p><span className="font-bold">Party:</span> {selectedParty ? selectedParty.value : "All Parties"}</p>
+                        <p><span className="font-bold">Period:</span> {startDate ? formatDateLabel(startDate) : "Start"} — {endDate ? formatDateLabel(endDate) : "Present"}</p>
+                    </div>
+                    <div className="text-right">
+                        <p><span className="font-bold">Printed On:</span> {new Date().toLocaleDateString('en-GB')}</p>
+                        <p><span className="font-bold">Type:</span> {selectedParty ? selectedParty.type : typeFilter}</p>
+                    </div>
+                </div>
+            </div>
+
             {/* ── Page Header ── */}
             <motion.div
                 initial={{ opacity: 0, y: -12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between gap-3 flex-wrap"
+                className="flex items-center justify-between gap-3 flex-wrap print:hidden"
             >
                 <div className="flex items-center gap-3">
                     <button
@@ -235,19 +273,30 @@ export default function LedgerPage() {
                     </div>
                 </div>
 
-                {/* Add Entry button — only in party mode */}
-                {selectedParty && (
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 print:hidden">
+                    {selectedParty && (
+                        <motion.button
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-black text-white cursor-pointer transition-all hover:opacity-90 active:scale-95"
+                            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
+                        >
+                            <PlusCircle size={16} />
+                            Add Receipt / Payment
+                        </motion.button>
+                    )}
                     <motion.button
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-black text-white cursor-pointer transition-all hover:opacity-90 active:scale-95"
-                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-black text-white cursor-pointer transition-all hover:opacity-90 active:scale-95 bg-gray-900 hover:bg-gray-800"
                     >
-                        <PlusCircle size={16} />
-                        Add Receipt / Payment
+                        <Printer size={16} />
+                        Print Ledger
                     </motion.button>
-                )}
+                </div>
             </motion.div>
 
             {/* ── Party Selector + Filters ── */}
@@ -255,7 +304,7 @@ export default function LedgerPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 space-y-4"
+                className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 space-y-4 print:hidden"
                 style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
             >
                 {/* Section Label */}
@@ -440,7 +489,7 @@ export default function LedgerPage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.3 }}
-                                    className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6"
+                                    className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 print:hidden"
                                     style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
                                 >
                                     <p className="text-xs font-black text-gray-900 uppercase tracking-wider mb-4">

@@ -154,10 +154,23 @@ export default function LedgerStats(props: LedgerStatsProps) {
     }
 
     return (
-        <div className={`grid gap-3 md:gap-4 ${props.mode === "party" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
-            {cards.map((card, i) => (
-                <StatCardItem key={card.label} card={card} index={i} />
-            ))}
-        </div>
+        <>
+            {/* Screen View */}
+            <div className={`grid gap-3 md:gap-4 print:hidden ${props.mode === "party" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
+                {cards.map((card, i) => (
+                    <StatCardItem key={card.label} card={card} index={i} />
+                ))}
+            </div>
+
+            {/* Print View */}
+            <div className="hidden print:flex flex-wrap items-center justify-between border-b-2 border-gray-900 pb-3 mb-6 gap-4">
+                {cards.map((card) => (
+                    <div key={card.label} className="text-sm font-bold text-gray-900">
+                        <span className="uppercase text-gray-500 mr-2 text-xs">{card.label}:</span>
+                        {Math.abs(card.value).toLocaleString()}/-
+                    </div>
+                ))}
+            </div>
+        </>
     );
 }
