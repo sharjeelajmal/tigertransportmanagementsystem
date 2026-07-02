@@ -115,6 +115,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, data: invoice }, { status: 201 });
     } catch (error: any) {
         console.error('API Error:', error);
+        
+        // Handle MongoDB duplicate key error for invoiceNo
+        if (error.code === 11000 && error.keyPattern && error.keyPattern.invoiceNo) {
+            return NextResponse.json(
+                { success: false, error: 'Yeh Invoice Number already exist karta hai. Please page refresh karein taake naya number assign ho.' },
+                { status: 400 }
+            );
+        }
+
         return NextResponse.json(
             { success: false, error: error.message || 'Failed to save invoice' },
             { status: 400 }

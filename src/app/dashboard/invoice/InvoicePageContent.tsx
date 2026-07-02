@@ -37,6 +37,7 @@ export default function InvoicePageContent() {
     const [pages, setPages] = useState<PageData[]>([]);
     const [meta, setMeta] = useState<Meta>({ invoiceNo: "", billingDate: "", invoiceDate: "", clientName: "", clientPhone: "", clientAddress: "", remarks: "", discount: 0, advance: 0, partyName: "", vehicleNo: "", vehicleDetail: "", pickupFrom: "", deliverTo: "" });
     const [saving, setSaving] = useState(false), [saved, setSaved] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
     const [screenScale, setScreenScale] = useState(1);
 
     const PAGE_WIDTH = 794;
@@ -48,14 +49,20 @@ export default function InvoicePageContent() {
     }, []);
 
     useEffect(() => {
-        setReady(true);
         if (invoiceId) {
             fetch("/api/invoices").then(r => r.json()).then(data => {
-                if (!data.success) return;
+                if (!data.success) {
+                    setReady(true);
+                    return;
+                }
                 const f = (data.data as SavedInvoicePayload[]).find((x) => x._id === invoiceId);
-                if (!f) return;
+                if (!f) {
+                    setReady(true);
+                    return;
+                }
                 setMeta({ invoiceNo: f.invoiceNo, billingDate: f.billingDate, invoiceDate: f.invoiceDate, clientName: f.clientName || "", clientPhone: f.clientPhone || "", clientAddress: f.clientAddress || "", remarks: f.remarks || "", discount: f.discount || 0, advance: f.advance || 0, partyName: f.partyName || "", vehicleNo: f.vehicleNo || "", vehicleDetail: f.vehicleDetail || "", pickupFrom: f.pickupFrom || "", deliverTo: f.deliverTo || "" });
                 setPages([{ id: "p1", items: f.items.length ? f.items : [makeItem()] }]);
+                setReady(true);
 
                 // Handle auto-download from list page
                 if (sp.get("download") === "true") {
@@ -68,23 +75,41 @@ export default function InvoicePageContent() {
                         });
                     }, 800);
                 }
+            }).catch(() => {
+                setReady(true);
             });
             return;
         }
+        
         const nameParam = sp.get("name");
         const phoneParam = sp.get("phone");
         const addressParam = sp.get("address");
 
-        setMeta(m => ({
-            ...m,
-            billingDate: today(),
-            invoiceDate: today(),
-            invoiceNo: genNo(),
-            clientName: nameParam || m.clientName,
-            clientPhone: phoneParam || m.clientPhone,
-            clientAddress: addressParam || m.clientAddress
-        }));
-        setPages([{ id: "p1", items: [makeItem()] }]);
+        fetch("/api/invoices/next-number").then(r => r.json()).then(data => {
+            setMeta(m => ({
+                ...m,
+                billingDate: today(),
+                invoiceDate: today(),
+                invoiceNo: data.success ? data.nextInvoiceNo : genNo(),
+                clientName: nameParam || m.clientName,
+                clientPhone: phoneParam || m.clientPhone,
+                clientAddress: addressParam || m.clientAddress
+            }));
+            setPages([{ id: "p1", items: [makeItem()] }]);
+            setReady(true);
+        }).catch(() => {
+            setMeta(m => ({
+                ...m,
+                billingDate: today(),
+                invoiceDate: today(),
+                invoiceNo: genNo(),
+                clientName: nameParam || m.clientName,
+                clientPhone: phoneParam || m.clientPhone,
+                clientAddress: addressParam || m.clientAddress
+            }));
+            setPages([{ id: "p1", items: [makeItem()] }]);
+            setReady(true);
+        });
     }, [invoiceId, sp, type]);
 
     useEffect(() => {
@@ -165,11 +190,12 @@ export default function InvoicePageContent() {
                 }, 500); // slight delay to ensure 'Saving...' UI is gone before taking snapshot
 
             } else {
-                alert((await res.json()).error);
+                const errData = await res.json();
+                setErrorMsg(errData.error || "Failed to save invoice");
                 setSaved(false);
             }
         } catch {
-            alert("Save failed");
+            setErrorMsg("Save failed due to network error");
             setSaved(false);
         }
         setSaving(false);
@@ -179,6 +205,22 @@ export default function InvoicePageContent() {
 
     return (
         <div className="invoice-print-root" style={{ minHeight: "100vh", background: "#c9c9c9", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 16, paddingBottom: 40, paddingLeft: 12, paddingRight: 12, fontFamily: "'Montserrat', sans-serif" }}>
+            
+            {errorMsg && (
+                <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", maxWidth: "400px", width: "90%", boxShadow: "0 4px 20px rgba(0,0,0,0.15)", textAlign: "center", fontFamily: "'Montserrat', sans-serif" }}>
+                        <div style={{ color: "#d32f2f", marginBottom: "16px", display: "flex", justifyContent: "center" }}>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        </div>
+                        <h3 style={{ margin: "0 0 12px 0", fontSize: "1.2rem", fontWeight: 700, color: "#333" }}>Error</h3>
+                        <p style={{ margin: "0 0 20px 0", fontSize: "0.95rem", color: "#555", lineHeight: "1.5" }}>{errorMsg}</p>
+                        <button onClick={() => setErrorMsg("")} style={{ background: "#d32f2f", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "6px", fontWeight: 600, cursor: "pointer", fontSize: "0.95rem", transition: "background 0.2s" }} onMouseOver={e => (e.currentTarget.style.background = "#b71c1c")} onMouseOut={e => (e.currentTarget.style.background = "#d32f2f")}>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <InvoiceActions type={type} addPage={addPage} handleSave={handleSave} saving={saving} saved={saved} />
             <div className="inv-pages-container" style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", alignItems: "center" }}>
                 {pages.map((page, idx) => (
