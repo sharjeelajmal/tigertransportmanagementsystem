@@ -78,7 +78,7 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                     <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
                         <img src="/Images/logo.jpg" alt="Tiger Transports" style={{ width: 100, height: 100, objectFit: "contain", flexShrink: 0 }} />
                         <div>
-                            <div style={{ fontSize: 24, fontWeight: 900, color: M, letterSpacing: 1, lineHeight: 1 }}>TIGER TRANSPORTS</div>
+                            <div style={{ fontSize: 24, fontWeight: 900, color: M, letterSpacing: 1, lineHeight: 1.15 }}>TIGER TRANSPORTS</div>
                             <div style={{ width: 70, height: 3, background: GRAD, borderRadius: 2, margin: "6px 0 5px 0" }} />
                             <div style={{ fontSize: 10, color: "#777", fontWeight: 500 }}>PLOT NO. W2/1/42, PORT QASIM, KARACHI</div>
                             <div style={{ fontSize: 10, color: "#777", fontWeight: 500 }}>+92 300 9280276</div>
@@ -86,23 +86,23 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                     </div>
                     {/* Right: INVOICE heading */}
                     <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 58, fontWeight: 900, color: "#f0e8e8", lineHeight: 1, letterSpacing: 1, position: "relative" }}>
+                        <div style={{ fontSize: 58, fontWeight: 900, color: "#f0e8e8", lineHeight: 1.15, letterSpacing: 1, position: "relative" }}>
                             <span style={{ position: "relative", zIndex: 1, color: M }}>INVOICE</span>
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: "#aaa", letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 2 }}>CUSTOMER</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "#aaa", letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 8 }}>CUSTOMER</div>
                     </div>
                 </div>
 
                 {/* ░░ MAROON SEPARATOR BAND ░░ */}
-                <div style={{ marginLeft: 7, background: GRAD, height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 34px", marginTop: 18, position: "relative", zIndex: 2 }}>
-                    <div style={{ display: "flex", gap: 24 }}>
+                <div style={{ marginLeft: 7, background: GRAD, height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 34px", marginTop: 18, position: "relative", zIndex: 2, overflow: "hidden" }}>
+                    <div style={{ display: "flex", gap: 24, flexShrink: 0 }}>
                         <MBandField label="Invoice No" value={meta.invoiceNo} onChange={v => sm("invoiceNo", v)} />
                         <MBandField label="Billing Date" value={meta.billingDate} onChange={v => sm("billingDate", v)} />
                         <MBandField label="Invoice Date" value={meta.invoiceDate} onChange={v => sm("invoiceDate", v)} />
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Total Due</div>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>Rs. {fmt(netTotal)}</div>
+                    <div style={{ textAlign: "right", flexShrink: 0, lineHeight: 1.2 }}>
+                        <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Total Due</div>
+                        <div style={{ fontSize: 17, fontWeight: 900, color: "#fff", lineHeight: 1.15 }}>Rs. {fmt(netTotal)}</div>
                     </div>
                 </div>
 

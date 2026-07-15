@@ -39,61 +39,138 @@ export const today = () => new Date().toLocaleDateString("en-GB");
 export const genNo = () => { const d = new Date(); return `TTM-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${Math.floor(1000 + Math.random() * 9000)}`; };
 
 export const downloadInvoicePDF = async (filename: string) => {
-  const element = document.querySelector(".inv-pages-container") as HTMLElement;
-  if (!element) return;
+  const container = document.querySelector('.inv-pages-container') as HTMLElement;
+  if (!container) return;
 
-  // Dynamically import html2pdf to prevent "self is not defined" SSR error
-  const html2pdf = (await import('html2pdf.js')).default;
+  // ── Wait for all web fonts to fully load ──────────────────────────────────────
+  // CRITICAL: Without this, html2canvas renders with system font metrics, causing
+  // text overlap with adjacent elements (e.g. TIGER TRANSPORTS line / INVOICE text).
+  await document.fonts.ready;
 
-  const opt = {
-    margin: 0,
-    filename: filename,
-    image: { type: 'jpeg' as const, quality: 1 },
-    html2canvas: { scale: 3, useCORS: true, letterRendering: true, windowWidth: 794 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-  };
+  // ── Dynamically import — prevents SSR "self is not defined" errors ─────────────
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf'),
+  ]);
 
-  // Temporarily bypass any mobile zoom or transform scaling so the PDF captures perfect 100% width
-  const originalZoom = element.style.zoom;
-  const originalTransform = element.style.transform;
-  const scaleHolders = Array.from(document.querySelectorAll(".inv-screen-scale-holder")) as HTMLElement[];
-  const scaleWraps = Array.from(document.querySelectorAll(".inv-screen-scale-wrap")) as HTMLElement[];
-  const holderStyles = scaleHolders.map((el) => ({ el, width: el.style.width, height: el.style.height }));
-  const wrapStyles = scaleWraps.map((el) => ({ el, transform: el.style.transform }));
-  element.style.zoom = '1';
-  element.style.transform = 'none';
-  scaleHolders.forEach((el) => {
-    el.style.width = '794px';
-    el.style.height = '1123px';
-  });
-  scaleWraps.forEach((el) => {
-    el.style.transform = 'none';
+  // ── STEP 1: Hide all no-print elements ────────────────────────────────────────
+  const noPrintEls = Array.from(container.querySelectorAll('.no-print')) as HTMLElement[];
+  noPrintEls.forEach(el => { el.style.display = 'none'; });
+
+  // ── STEP 2: Remove screen-scale transforms so capture is at 100% ──────────────
+  const scaleHolders = Array.from(document.querySelectorAll('.inv-screen-scale-holder')) as HTMLElement[];
+  const scaleWraps = Array.from(document.querySelectorAll('.inv-screen-scale-wrap')) as HTMLElement[];
+  const holderSnaps = scaleHolders.map(el => ({ el, width: el.style.width, height: el.style.height }));
+  const wrapSnaps = scaleWraps.map(el => ({ el, transform: el.style.transform }));
+  scaleHolders.forEach(el => { el.style.width = '794px'; el.style.height = '1123px'; });
+  scaleWraps.forEach(el => { el.style.transform = 'none'; });
+
+  // ── CRITICAL: Fix container width so html2canvas captures from x=0 ────────────
+  // The container is width:100% with alignItems:center on screen. This means the
+  // 794px invoice is centered inside a wider container (e.g. at x=323px in 1440px).
+  // html2canvas(container, { width:794 }) captures the LEFT 794px of the container
+  // which is gray background + only the left half of the invoice.
+  // Fix: shrink container to 794px and left-align so invoice starts at x=0.
+  const containerWidthSnap = container.style.width;
+  const containerAlignSnap = container.style.alignItems;
+  const containerGapSnap = container.style.gap;
+  container.style.width = '794px';
+  container.style.alignItems = 'flex-start';
+  container.style.gap = '0px';
+
+  // ── Force browser reflow BEFORE html2canvas reads computed styles ──────────────
+  // Style mutations are batched. Without this wait, html2canvas may read stale
+  // computed transform/width values causing misaligned element positions.
+  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+  // ── STEP 3: PRINT MODE — Replace inputs/textareas with plain spans ─────────────
+  // html2canvas reads the DOM's rendered text — NOT React's .value property.
+  // We must swap inputs for spans before capture, then restore after.
+  type Snap = { parent: Element; original: Element; placeholder: HTMLSpanElement };
+  const snapshots: Snap[] = [];
+
+  (Array.from(container.querySelectorAll('input, textarea')) as (HTMLInputElement | HTMLTextAreaElement)[])
+    .forEach(el => {
+      const value = el.value ?? '';
+      const cs = window.getComputedStyle(el);
+      const span = document.createElement('span');
+      span.textContent = value;
+      span.style.cssText = [
+        `display:inline-block`,
+        `font-family:${cs.fontFamily}`,
+        `font-size:${cs.fontSize}`,
+        `font-weight:${cs.fontWeight}`,
+        `color:${cs.color}`,
+        `background:transparent`,
+        `line-height:${cs.lineHeight}`,
+        `letter-spacing:${cs.letterSpacing}`,
+        `text-align:${cs.textAlign}`,
+        `text-transform:${cs.textTransform}`,
+        `width:${cs.width}`,
+        `padding:${cs.padding}`,
+        `border:none`,
+        `outline:none`,
+        `white-space:pre-wrap`,
+        `word-break:break-word`,
+        `vertical-align:middle`,
+      ].join(';');
+      const parent = el.parentElement!;
+      parent.insertBefore(span, el);
+      parent.removeChild(el);
+      snapshots.push({ parent, original: el, placeholder: span });
+    });
+
+  // ── STEP 4: Capture with html2canvas ─────────────────────────────────────────
+  // scroll offsets must be negated so html2canvas anchors correctly
+  // regardless of how far the user has scrolled the page.
+  const canvas = await html2canvas(container, {
+    scale: 3,
+    useCORS: true,
+    allowTaint: false,
+    foreignObjectRendering: false,
+    width: 794,
+    height: 1123,
+    windowWidth: 794,
+    windowHeight: 1123,
+    scrollX: -window.scrollX,
+    scrollY: -window.scrollY,
+    backgroundColor: '#c9c9c9',
+  } as any);
+
+  // ── STEP 5: Create PDF sized EXACTLY to the canvas ───────────────────────────
+  // PDF page height = canvas.height / canvas.width × 210mm
+  // This is mathematically guaranteed to fit the entire canvas on ONE page.
+  // No page-splitting → no blank trailing pages. Ever.
+  const pdfWidthMm = 210;
+  const pdfHeightMm = (canvas.height / canvas.width) * pdfWidthMm;
+
+  const pdf = new jsPDF({
+    unit: 'mm',
+    format: [pdfWidthMm, pdfHeightMm],
+    orientation: 'portrait',
+    compress: true,
   });
 
-  // Before generating, we briefly adjust the UI to look like print (hide buttons)
-  const noPrintElements = Array.from(document.querySelectorAll(".no-print")) as HTMLElement[];
-  const noPrintDisplay = noPrintElements.map((el) => ({ el, display: el.style.display }));
-  noPrintElements.forEach((el) => {
-    el.style.display = "none";
-  });
+  const imgData = canvas.toDataURL('image/jpeg', 0.97);
+  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm);
+  pdf.save(filename);
 
-  // Generate and save
-  await html2pdf().set(opt).from(element).save();
-
-  // Restore UI
-  element.style.zoom = originalZoom;
-  element.style.transform = originalTransform;
-  holderStyles.forEach(({ el, width, height }) => {
-    el.style.width = width;
-    el.style.height = height;
+  // ── STEP 6: Restore everything ────────────────────────────────────────────────
+  snapshots.forEach(({ parent, original, placeholder }) => {
+    parent.insertBefore(original, placeholder);
+    parent.removeChild(placeholder);
   });
-  wrapStyles.forEach(({ el, transform }) => {
-    el.style.transform = transform;
-  });
-  noPrintDisplay.forEach(({ el, display }) => {
-    el.style.display = display;
-  });
+  holderSnaps.forEach(({ el, width, height }) => { el.style.width = width; el.style.height = height; });
+  wrapSnaps.forEach(({ el, transform }) => { el.style.transform = transform; });
+  // Restore container
+  container.style.width = containerWidthSnap;
+  container.style.alignItems = containerAlignSnap;
+  container.style.gap = containerGapSnap;
+  noPrintEls.forEach(el => { el.style.display = ''; });
 };
+
+
+
 
 export const PRINT_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800&display=swap');
