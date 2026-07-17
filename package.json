@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^149.0.0",
+    "@sparticuz/chromium-min": "^149.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.1",
     "html2canvas": "^1.4.1",
