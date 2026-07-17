@@ -1,70 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 import path from 'path';
 import os from 'os';
 
-function findChromePath(): string | undefined {
-    const homeDir = os.homedir();
-    const { existsSync } = require('fs');
+async function getBrowser() {
+    const isProduction = process.env.NODE_ENV === 'production';
 
-    // Priority 1: chrome-headless-shell (what Puppeteer actually downloads on this machine)
-    const headlessShellPath = path.join(
-        homeDir, '.cache', 'puppeteer', 'chrome-headless-shell',
-        'win64-150.0.7871.24', 'chrome-headless-shell-win64', 'chrome-headless-shell.exe'
-    );
-    if (existsSync(headlessShellPath)) return headlessShellPath;
+    if (isProduction) {
+        // On Vercel / production: use @sparticuz/chromium
+        const chromium = (await import('@sparticuz/chromium')).default;
+        const puppeteer = (await import('puppeteer-core')).default;
 
-    // Priority 2: Regular chrome
-    const chromePath = path.join(
-        homeDir, '.cache', 'puppeteer', 'chrome',
-        'win64-150.0.7871.24', 'chrome-win64', 'chrome.exe'
-    );
-    if (existsSync(chromePath)) return chromePath;
+        const executablePath = await chromium.executablePath();
+        return puppeteer.launch({
+            args: chromium.args,
+            executablePath,
+            headless: true,
+        });
+    } else {
+        // On local dev: use local puppeteer with bundled chromium
+        const puppeteer = (await import('puppeteer')).default;
 
-    return undefined;
+        // Try to find locally installed Puppeteer chromium
+        const homeDir = os.homedir();
+        const { existsSync } = await import('fs');
+
+        const headlessShellPath = path.join(
+            homeDir, '.cache', 'puppeteer', 'chrome-headless-shell',
+            'win64-150.0.7871.24', 'chrome-headless-shell-win64', 'chrome-headless-shell.exe'
+        );
+        const chromePath = path.join(
+            homeDir, '.cache', 'puppeteer', 'chrome',
+            'win64-150.0.7871.24', 'chrome-win64', 'chrome.exe'
+        );
+
+        const executablePath = existsSync(headlessShellPath)
+            ? headlessShellPath
+            : existsSync(chromePath)
+                ? chromePath
+                : undefined;
+
+        return puppeteer.launch({
+            headless: true,
+            executablePath,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+        });
+    }
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const { html, filename, baseUrl } = await req.json();
+        const { html, filename } = await req.json();
 
         if (!html) {
             return NextResponse.json({ error: 'HTML content is required' }, { status: 400 });
         }
 
-        const executablePath = findChromePath();
-        if (!executablePath) {
-            return NextResponse.json({ error: 'Chrome executable not found on server' }, { status: 500 });
-        }
-
-        const browser = await puppeteer.launch({
-            headless: true,
-            executablePath,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-gpu',
-                '--allow-file-access-from-files',
-            ],
-        });
-
+        const browser = await getBrowser();
         const page = await browser.newPage();
-        
-        // Allow loading resources from the local dev server
-        if (baseUrl) {
-            await page.setRequestInterception(false);
-        }
 
         await page.emulateMediaType('print');
-        
-        // Set content with the base URL so relative resources resolve
-        await page.setContent(html, { 
+        await page.setContent(html, {
             waitUntil: 'load',
             timeout: 30000,
         });
 
-        // Wait extra time for fonts and images to fully render
-        await new Promise(r => setTimeout(r, 1000));
+        // Wait for fonts and images to render
+        await new Promise(r => setTimeout(r, 1500));
 
         const pdfBuffer = await page.pdf({
             format: 'A4',
