@@ -42,131 +42,94 @@ export const downloadInvoicePDF = async (filename: string) => {
   const container = document.querySelector('.inv-pages-container') as HTMLElement;
   if (!container) return;
 
-  // ── Wait for all web fonts to fully load ──────────────────────────────────────
-  // CRITICAL: Without this, html2canvas renders with system font metrics, causing
-  // text overlap with adjacent elements (e.g. TIGER TRANSPORTS line / INVOICE text).
-  await document.fonts.ready;
-
-  // ── Dynamically import — prevents SSR "self is not defined" errors ─────────────
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import('html2canvas'),
-    import('jspdf'),
-  ]);
-
-  // ── STEP 1: Hide all no-print elements ────────────────────────────────────────
-  const noPrintEls = Array.from(container.querySelectorAll('.no-print')) as HTMLElement[];
-  noPrintEls.forEach(el => { el.style.display = 'none'; });
-
-  // ── STEP 2: Remove screen-scale transforms so capture is at 100% ──────────────
-  const scaleHolders = Array.from(document.querySelectorAll('.inv-screen-scale-holder')) as HTMLElement[];
-  const scaleWraps = Array.from(document.querySelectorAll('.inv-screen-scale-wrap')) as HTMLElement[];
-  const holderSnaps = scaleHolders.map(el => ({ el, width: el.style.width, height: el.style.height }));
-  const wrapSnaps = scaleWraps.map(el => ({ el, transform: el.style.transform }));
-  scaleHolders.forEach(el => { el.style.width = '794px'; el.style.height = '1123px'; });
-  scaleWraps.forEach(el => { el.style.transform = 'none'; });
-
-  // ── CRITICAL: Fix container width so html2canvas captures from x=0 ────────────
-  // The container is width:100% with alignItems:center on screen. This means the
-  // 794px invoice is centered inside a wider container (e.g. at x=323px in 1440px).
-  // html2canvas(container, { width:794 }) captures the LEFT 794px of the container
-  // which is gray background + only the left half of the invoice.
-  // Fix: shrink container to 794px and left-align so invoice starts at x=0.
-  const containerWidthSnap = container.style.width;
-  const containerAlignSnap = container.style.alignItems;
-  const containerGapSnap = container.style.gap;
-  container.style.width = '794px';
-  container.style.alignItems = 'flex-start';
-  container.style.gap = '0px';
-
-  // ── Force browser reflow BEFORE html2canvas reads computed styles ──────────────
-  // Style mutations are batched. Without this wait, html2canvas may read stale
-  // computed transform/width values causing misaligned element positions.
-  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-
-  // ── STEP 3: PRINT MODE — Replace inputs/textareas with plain spans ─────────────
-  // html2canvas reads the DOM's rendered text — NOT React's .value property.
-  // We must swap inputs for spans before capture, then restore after.
-  type Snap = { parent: Element; original: Element; placeholder: HTMLSpanElement };
-  const snapshots: Snap[] = [];
-
-  (Array.from(container.querySelectorAll('input, textarea')) as (HTMLInputElement | HTMLTextAreaElement)[])
-    .forEach(el => {
-      const value = el.value ?? '';
-      const cs = window.getComputedStyle(el);
-      const span = document.createElement('span');
-      span.textContent = value;
-      span.style.cssText = [
-        `display:inline-block`,
-        `font-family:${cs.fontFamily}`,
-        `font-size:${cs.fontSize}`,
-        `font-weight:${cs.fontWeight}`,
-        `color:${cs.color}`,
-        `background:transparent`,
-        `line-height:${cs.lineHeight}`,
-        `letter-spacing:${cs.letterSpacing}`,
-        `text-align:${cs.textAlign}`,
-        `text-transform:${cs.textTransform}`,
-        `width:${cs.width}`,
-        `padding:${cs.padding}`,
-        `border:none`,
-        `outline:none`,
-        `white-space:pre-wrap`,
-        `word-break:break-word`,
-        `vertical-align:middle`,
-      ].join(';');
-      const parent = el.parentElement!;
-      parent.insertBefore(span, el);
-      parent.removeChild(el);
-      snapshots.push({ parent, original: el, placeholder: span });
-    });
-
-  // ── STEP 4: Capture with html2canvas ─────────────────────────────────────────
-  // scroll offsets must be negated so html2canvas anchors correctly
-  // regardless of how far the user has scrolled the page.
-  const canvas = await html2canvas(container, {
-    scale: 3,
-    useCORS: true,
-    allowTaint: false,
-    foreignObjectRendering: false,
-    width: 794,
-    height: 1123,
-    windowWidth: 794,
-    windowHeight: 1123,
-    scrollX: -window.scrollX,
-    scrollY: -window.scrollY,
-    backgroundColor: '#c9c9c9',
-  } as any);
-
-  // ── STEP 5: Create PDF sized EXACTLY to the canvas ───────────────────────────
-  // PDF page height = canvas.height / canvas.width × 210mm
-  // This is mathematically guaranteed to fit the entire canvas on ONE page.
-  // No page-splitting → no blank trailing pages. Ever.
-  const pdfWidthMm = 210;
-  const pdfHeightMm = (canvas.height / canvas.width) * pdfWidthMm;
-
-  const pdf = new jsPDF({
-    unit: 'mm',
-    format: [pdfWidthMm, pdfHeightMm],
-    orientation: 'portrait',
-    compress: true,
+  // Sync input values to attributes so outerHTML captures them
+  const inputs = container.querySelectorAll('input');
+  inputs.forEach(input => {
+      if (input.type === 'checkbox' || input.type === 'radio') {
+          if (input.checked) input.setAttribute('checked', 'checked');
+          else input.removeAttribute('checked');
+      } else {
+          input.setAttribute('value', input.value);
+      }
   });
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.97);
-  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm);
-  pdf.save(filename);
-
-  // ── STEP 6: Restore everything ────────────────────────────────────────────────
-  snapshots.forEach(({ parent, original, placeholder }) => {
-    parent.insertBefore(original, placeholder);
-    parent.removeChild(placeholder);
+  const textareas = container.querySelectorAll('textarea');
+  textareas.forEach(ta => {
+      ta.textContent = ta.value;
   });
-  holderSnaps.forEach(({ el, width, height }) => { el.style.width = width; el.style.height = height; });
-  wrapSnaps.forEach(({ el, transform }) => { el.style.transform = transform; });
-  // Restore container
-  container.style.width = containerWidthSnap;
-  container.style.alignItems = containerAlignSnap;
-  container.style.gap = containerGapSnap;
-  noPrintEls.forEach(el => { el.style.display = ''; });
+
+  // Collect ALL stylesheets from the page (link tags + style tags)
+  const baseUrl = window.location.origin;
+  let allStyles = '';
+
+  // Inline <style> tags
+  document.querySelectorAll('style').forEach(style => {
+      allStyles += style.innerHTML + '\n';
+  });
+
+  // External <link rel="stylesheet"> tags — fetch them inline
+  const linkFetches = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(async (link) => {
+      const href = (link as HTMLLinkElement).href;
+      try {
+          const res = await fetch(href);
+          if (res.ok) allStyles += await res.text() + '\n';
+      } catch { /* skip unreachable */ }
+  });
+  await Promise.all(linkFetches);
+
+  // Get invoice container outer HTML
+  const containerHtml = container.outerHTML;
+
+  // Build clean standalone HTML — no React/Next.js scripts at all
+  const cleanHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${filename}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; font-family: 'Montserrat', sans-serif; }
+    .no-print { display: none !important; }
+    .inv-pages-container { display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 794px; }
+    .inv-screen-scale-holder { width: 794px !important; height: 1123px !important; overflow: hidden; }
+    .inv-screen-scale-wrap { width: 794px !important; height: 1123px !important; transform: none !important; }
+    ${allStyles}
+  </style>
+</head>
+<body>
+${containerHtml.replace(/src="\/Images\//g, `src="${baseUrl}/Images/`).replace(/src='\/Images\//g, `src='${baseUrl}/Images/`)}
+</body>
+</html>`;
+
+  try {
+      const response = await fetch('/api/pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html: cleanHtml, filename, baseUrl }),
+      });
+
+      if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to generate PDF on the server');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+  } catch (err) {
+      console.error("PDF download error:", err);
+      alert("PDF download failed. Please use browser print button as backup.");
+  }
 };
 
 

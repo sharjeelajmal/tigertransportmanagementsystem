@@ -155,27 +155,33 @@ export default function InvoicePageContent() {
         };
     }));
 
-    const handleSave = async () => {
-        if (invoiceId) {
-            setSaving(true);
-            setSaved(true);
-            setTimeout(() => {
-                import("./InvoiceUtils").then(({ downloadInvoicePDF }) => {
-                    const filename = `${type.toUpperCase()}_INVOICE_${meta.invoiceNo}.pdf`;
-                    downloadInvoicePDF(filename).then(() => {
-                        setSaved(false);
-                        setSaving(false);
-                    });
-                });
-            }, 500);
-            return;
-        }
+    // Auto-save logic for existing invoices
+    useEffect(() => {
+        if (!invoiceId || !ready) return;
+        
+        const timer = setTimeout(async () => {
+            try {
+                const items = pages.flatMap(p => p.items).filter(i => i.cargoDetails || i.rate || i.amount);
+                const body = { type, ...meta, items, subtotal, totalAmount: isAllocation ? remaining : netTotal, remainingAmount: isAllocation ? remaining : 0 };
+                await fetch(`/api/invoices/${invoiceId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+            } catch (err) {
+                console.error("Auto-save failed", err);
+            }
+        }, 1500);
 
+        return () => clearTimeout(timer);
+    }, [meta, pages, subtotal, netTotal, remaining, invoiceId, type, ready, isAllocation]);
+
+    const handleSave = async () => {
         setSaving(true);
         try {
             const items = pages.flatMap(p => p.items).filter(i => i.cargoDetails || i.rate || i.amount);
             const body = { type, ...meta, items, subtotal, totalAmount: isAllocation ? remaining : netTotal, remainingAmount: isAllocation ? remaining : 0 };
-            const res = await fetch("/api/invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+            
+            const url = invoiceId ? `/api/invoices/${invoiceId}` : "/api/invoices";
+            const method = invoiceId ? "PUT" : "POST";
+            
+            const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             if (res.ok) {
                 setSaved(true);
 
@@ -185,6 +191,7 @@ export default function InvoicePageContent() {
                         const filename = `${type.toUpperCase()}_INVOICE_${meta.invoiceNo}.pdf`;
                         downloadInvoicePDF(filename).then(() => {
                             setSaved(false);
+                            setSaving(false);
                         });
                     });
                 }, 500); // slight delay to ensure 'Saving...' UI is gone before taking snapshot
@@ -193,12 +200,13 @@ export default function InvoicePageContent() {
                 const errData = await res.json();
                 setErrorMsg(errData.error || "Failed to save invoice");
                 setSaved(false);
+                setSaving(false);
             }
         } catch {
             setErrorMsg("Save failed due to network error");
             setSaved(false);
+            setSaving(false);
         }
-        setSaving(false);
     };
 
     if (!ready) return null;
