@@ -3,8 +3,8 @@ import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InvoiceItem, Meta, PageData, fmt } from "./InvoiceUtils";
 
-const M = "#6B0C10";
-const ML = "#9B1520";
+const M = "#000000";
+const ML = "#000000";
 const GRAD = `linear-gradient(135deg, ${M} 0%, ${ML} 100%)`;
 
 interface Props {
@@ -36,7 +36,7 @@ export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS,
                 ))}
 
                 {/* ░░ BG — bottom-right large circle ░░ */}
-                <div style={{ position: "absolute", bottom: -120, right: -120, width: 420, height: 420, borderRadius: "50%", border: `55px solid rgba(107,12,16,0.06)`, zIndex: 0, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", bottom: -120, right: -120, width: 420, height: 420, borderRadius: "50%", border: `55px solid rgba(17, 17, 17,0.06)`, zIndex: 0, pointerEvents: "none" }} />
 
                 {/* ░░ TOP MAROON HEADER ░░ */}
                 <div style={{ background: GRAD, height: 155, position: "relative", overflow: "hidden", zIndex: 2 }}>
@@ -67,14 +67,14 @@ export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS,
                         <div style={{ fontSize: 10, color: "#888", fontWeight: 500 }}>PLOT NO. W2/1/42, Port Qasim, Karachi &nbsp;·&nbsp; +92 300 9280276</div>
                     </div>
                     {/* Total due — right */}
-                    <div style={{ marginLeft: "auto", background: `rgba(107,12,16,0.06)`, border: `1.5px solid rgba(107,12,16,0.15)`, borderRadius: 10, padding: "10px 18px", textAlign: "right" }}>
+                    <div style={{ marginLeft: "auto", background: `rgba(17, 17, 17,0.06)`, border: `1.5px solid rgba(17, 17, 17,0.15)`, borderRadius: 10, padding: "10px 18px", textAlign: "right" }}>
                         <div style={{ fontSize: 9, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.1em" }}>Total Due</div>
                         <div style={{ fontSize: 22, fontWeight: 900, color: M }}>Rs. {fmt(netTotal)}</div>
                     </div>
                 </div>
 
                 {/* Thin maroon divider */}
-                <div style={{ margin: "14px 34px 0 34px", height: 2, background: `linear-gradient(90deg, ${M}, rgba(107,12,16,0.1))`, borderRadius: 2, zIndex: 2, position: "relative" }} />
+                <div style={{ margin: "14px 34px 0 34px", height: 2, background: `linear-gradient(90deg, ${M}, rgba(17, 17, 17,0.1))`, borderRadius: 2, zIndex: 2, position: "relative" }} />
 
                 {/* ░░ CLIENT + SHIPMENT INFO ░░ */}
                 <div style={{ paddingLeft: 34, paddingRight: 34, paddingTop: 14, paddingBottom: 12, display: "flex", gap: 12, position: "relative", zIndex: 2 }}>
@@ -99,7 +99,7 @@ export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS,
 
                 {/* ░░ TABLE ░░ */}
                 <div style={{ paddingLeft: 34, paddingRight: 34, position: "relative", zIndex: 2 }}>
-                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 14px rgba(107,12,16,0.12)" }}>
+                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 14px rgba(17, 17, 17,0.12)" }}>
                         <thead>
                             <tr style={{ background: GRAD, height: 40 }}>
                                 {["Sr. #", "Service / Deliverable", "Vehicle", "Price", "Qty", "Total"].map((h, i) => (
@@ -110,7 +110,7 @@ export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS,
                         <tbody>
                             <AnimatePresence mode="popLayout">
                                 {page.items.map((it: any, idx: number) => (
-                                    <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 36, background: idx % 2 === 1 ? `rgba(107,12,16,0.03)` : "#fff" }}>
+                                    <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 36, background: idx % 2 === 1 ? `rgba(17, 17, 17,0.03)` : "#fff" }}>
                                         <td style={tdc}>
                                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                                                 <span style={{ fontSize: 9, color: "#ccc", fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span>
@@ -133,7 +133,7 @@ export default function OutboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS,
                 {/* ░░ SUMMARY ░░ */}
                 {isLast && (
                     <div style={{ paddingLeft: 34, paddingRight: 34, paddingTop: 16, display: "flex", justifyContent: "flex-end", position: "relative", zIndex: 2 }}>
-                        <div style={{ width: 270, borderRadius: 10, overflow: "hidden", boxShadow: "0 3px 16px rgba(107,12,16,0.15)", border: "1px solid rgba(107,12,16,0.15)" }}>
+                        <div style={{ width: 270, borderRadius: 10, overflow: "hidden", boxShadow: "0 3px 16px rgba(17, 17, 17,0.15)", border: "1px solid rgba(17, 17, 17,0.15)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid #f0f0f0", fontSize: 11 }}>
                                 <span style={{ fontWeight: 600, color: "#777" }}>Sub-total</span>
                                 <span style={{ fontWeight: 700 }}>Rs. {fmt(subtotal)}</span>
@@ -186,9 +186,9 @@ function InfoRow({ label, value, onChange, big }: { label: string; value: string
     return <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}><span style={{ fontSize: 9, fontWeight: 700, color: "#aaa", minWidth: 62, flexShrink: 0 }}>{label}:</span><input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="—" style={{ fontFamily: "inherit", fontSize: big ? 16 : 10, fontWeight: big ? 800 : 600, color: big ? "#111" : "#444", background: "transparent", border: "none", outline: "none", flex: 1, cursor: "pointer" }} /></div>;
 }
 
-const delPSt: React.CSSProperties = { position: "absolute", top: -38, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: "#6B0C10", border: "1.5px solid rgba(107,12,16,0.25)", background: "#fff", borderRadius: 8, cursor: "pointer" };
+const delPSt: React.CSSProperties = { position: "absolute", top: -38, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: "#000000", border: "1.5px solid rgba(17, 17, 17,0.25)", background: "#fff", borderRadius: 8, cursor: "pointer" };
 const tdl: React.CSSProperties = { fontSize: 10, color: "#444", padding: "0 12px", borderBottom: "1px solid #eee", borderRight: "1px solid #eee", verticalAlign: "middle" };
 const tdc: React.CSSProperties = { ...tdl, textAlign: "center", position: "relative", borderLeft: "1px solid #eee" };
 const inp: React.CSSProperties = { width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: "'Montserrat',sans-serif", fontSize: 10, color: "#444", cursor: "pointer" };
-const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 9, padding: "5px 12px", border: "1.5px dashed rgba(107,12,16,0.25)", borderRadius: 7, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "#ccc" };
-const delRSt: React.CSSProperties = { background: "#fee2e2", border: "none", borderRadius: 4, color: "#6B0C10", cursor: "pointer", fontSize: 10, padding: "2px 6px", fontWeight: "bold" };
+const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 9, padding: "5px 12px", border: "1.5px dashed rgba(17, 17, 17,0.25)", borderRadius: 7, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "#ccc" };
+const delRSt: React.CSSProperties = { background: "#fee2e2", border: "none", borderRadius: 4, color: "#000000", cursor: "pointer", fontSize: 10, padding: "2px 6px", fontWeight: "bold" };

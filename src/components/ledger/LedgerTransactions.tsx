@@ -126,7 +126,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                         </td>
 
                                         {/* Debit */}
-                                        <td className="px-5 py-3.5 text-right">
+                                        <td className="px-5 py-3.5">
                                             <span
                                                 className="text-sm font-bold"
                                                 style={{ color: isDebit ? "var(--primary)" : "#9CA3AF" }}
@@ -136,7 +136,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                         </td>
 
                                         {/* Credit */}
-                                        <td className="px-5 py-3.5 text-right">
+                                        <td className="px-5 py-3.5">
                                             <span
                                                 className="text-sm font-bold"
                                                 style={{ color: !isDebit ? "#10B981" : "#9CA3AF" }}
@@ -146,7 +146,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                         </td>
 
                                         {/* Running Balance */}
-                                        <td className="px-5 py-3.5 text-right">
+                                        <td className="px-5 py-3.5">
                                             <span
                                                 className="text-sm font-black"
                                                 style={{ color: balPositive ? "#4F46E5" : "#F59E0B" }}
@@ -209,7 +209,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                             {fmt(row.credit)}
                                         </p>
                                     </div>
-                                    <div className="text-right">
+                                    <div>
                                         <p className="text-[10px] text-gray-400 font-semibold uppercase">Balance</p>
                                         <p
                                             className="text-sm font-black"
@@ -257,9 +257,9 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                             <th className="px-2 py-1.5 text-left border border-gray-900">Date</th>
                             <th className="px-2 py-1.5 text-left border border-gray-900">Doc No</th>
                             <th className="px-2 py-1.5 text-left border border-gray-900">Narration</th>
-                            <th className="px-2 py-1.5 text-right border border-gray-900">Debit</th>
-                            <th className="px-2 py-1.5 text-right border border-gray-900">Credit</th>
-                            <th className="px-2 py-1.5 text-right border border-gray-900">Balance</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Debit</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Credit</th>
+                            <th className="px-2 py-1.5 text-left border border-gray-900">Balance</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -274,9 +274,9 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                     <td className="px-2 py-1 border border-gray-900 whitespace-nowrap">{fmtDate(row.date)}</td>
                                     <td className="px-2 py-1 border border-gray-900 font-bold whitespace-nowrap">{row.docNo}</td>
                                     <td className="px-2 py-1 border border-gray-900">{row.narration}</td>
-                                    <td className="px-2 py-1 border border-gray-900 text-right">{fmt(row.debit)}</td>
-                                    <td className="px-2 py-1 border border-gray-900 text-right">{fmt(row.credit)}</td>
-                                    <td className="px-2 py-1 border border-gray-900 text-right font-black">
+                                    <td className="px-2 py-1 border border-gray-900">{fmt(row.debit)}</td>
+                                    <td className="px-2 py-1 border border-gray-900">{fmt(row.credit)}</td>
+                                    <td className="px-2 py-1 border border-gray-900 font-black">
                                         {Math.abs(row.balance).toLocaleString()} <span className="text-[10px]">{balPositive ? "Dr" : "Cr"}</span>
                                     </td>
                                 </tr>

@@ -41,7 +41,7 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                 {/* ── MAIN CONTENT ── */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "30px 36px 56px 30px", position: "relative" }}>
                     {/* BG decoration */}
-                    <div style={{ position: "absolute", top: -60, right: -60, width: 280, height: 280, borderRadius: "50%", background: "rgba(107,12,16,0.04)", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", top: -60, right: -60, width: 280, height: 280, borderRadius: "50%", background: "rgba(17, 17, 17,0.04)", pointerEvents: "none" }} />
 
                     {/* Header */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
@@ -171,4 +171,4 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
     );
 }
 
-const delPSt: React.CSSProperties = { position: "absolute", top: -36, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: "#6B0C10", border: "1.5px solid rgba(107,12,16,0.25)", background: "#fff", borderRadius: 8, cursor: "pointer" };
+const delPSt: React.CSSProperties = { position: "absolute", top: -36, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: "#000000", border: "1.5px solid rgba(17, 17, 17,0.25)", background: "#fff", borderRadius: 8, cursor: "pointer" };

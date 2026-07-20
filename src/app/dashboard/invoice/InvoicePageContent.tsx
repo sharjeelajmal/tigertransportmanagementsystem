@@ -212,41 +212,50 @@ export default function InvoicePageContent() {
     if (!ready) return null;
 
     return (
-        <div className="invoice-print-root" style={{ minHeight: "100vh", background: "#c9c9c9", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 16, paddingBottom: 40, paddingLeft: 12, paddingRight: 12, fontFamily: "'Montserrat', sans-serif" }}>
-            
-            {errorMsg && (
-                <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", maxWidth: "400px", width: "90%", boxShadow: "0 4px 20px rgba(0,0,0,0.15)", textAlign: "center", fontFamily: "'Montserrat', sans-serif" }}>
-                        <div style={{ color: "#d32f2f", marginBottom: "16px", display: "flex", justifyContent: "center" }}>
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        </div>
-                        <h3 style={{ margin: "0 0 12px 0", fontSize: "1.2rem", fontWeight: 700, color: "#333" }}>Error</h3>
-                        <p style={{ margin: "0 0 20px 0", fontSize: "0.95rem", color: "#555", lineHeight: "1.5" }}>{errorMsg}</p>
-                        <button onClick={() => setErrorMsg("")} style={{ background: "#d32f2f", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "6px", fontWeight: 600, cursor: "pointer", fontSize: "0.95rem", transition: "background 0.2s" }} onMouseOver={e => (e.currentTarget.style.background = "#b71c1c")} onMouseOut={e => (e.currentTarget.style.background = "#d32f2f")}>
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
+        <div className="invoice-print-root" style={{ minHeight: "100vh", position: "relative", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 24, paddingBottom: 60, paddingLeft: 12, paddingRight: 12, fontFamily: "'Montserrat', sans-serif" }}>
+            {/* Premium Fixed Background */}
+            <div className="no-print" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#0c0e12", zIndex: -1, overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: "-20%", left: "-10%", width: "50vw", height: "50vw", background: "radial-gradient(circle, rgba(185, 28, 34, 0.18) 0%, transparent 60%)", filter: "blur(80px)" }} />
+                <div style={{ position: "absolute", bottom: "-20%", right: "-10%", width: "60vw", height: "60vw", background: "radial-gradient(circle, rgba(107, 12, 16, 0.28) 0%, transparent 60%)", filter: "blur(100px)" }} />
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "70vw", height: "40vw", background: "radial-gradient(ellipse, rgba(185, 28, 34, 0.08) 0%, transparent 60%)", filter: "blur(120px)" }} />
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+')", opacity: 0.4 }} />
+            </div>
 
-            <InvoiceActions type={type} addPage={addPage} handleSave={handleSave} saving={saving} saved={saved} />
-            <div className="inv-pages-container" style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", alignItems: "center" }}>
-                {pages.map((page, idx) => (
-                    <div
-                        key={page.id}
-                        className="inv-screen-scale-holder"
-                        style={{ width: PAGE_WIDTH * screenScale, height: PAGE_HEIGHT * screenScale }}
-                    >
-                        <div
-                            className="inv-screen-scale-wrap"
-                            style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, transform: `scale(${screenScale})`, transformOrigin: "top left" }}
-                        >
-                            {isInbound ? <InboundInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
-                                isOutbound ? <OutboundInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
-                                    <AllocationInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} remaining={remaining} delPage={delPage} pagesCount={pages.length} />}
+            <div style={{ position: "relative", zIndex: 10, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                {errorMsg && (
+                    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <div style={{ background: "#fff", padding: "24px", borderRadius: "16px", maxWidth: "400px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", textAlign: "center", fontFamily: "'Montserrat', sans-serif" }}>
+                            <div style={{ color: "#d32f2f", marginBottom: "16px", display: "flex", justifyContent: "center" }}>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            </div>
+                            <h3 style={{ margin: "0 0 12px 0", fontSize: "1.2rem", fontWeight: 700, color: "#222" }}>Error</h3>
+                            <p style={{ margin: "0 0 20px 0", fontSize: "0.95rem", color: "#555", lineHeight: "1.5" }}>{errorMsg}</p>
+                            <button onClick={() => setErrorMsg("")} style={{ background: "#d32f2f", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "0.95rem", transition: "all 0.2s" }} onMouseOver={e => (e.currentTarget.style.background = "#b71c1c")} onMouseOut={e => (e.currentTarget.style.background = "#d32f2f")}>
+                                Close
+                            </button>
                         </div>
                     </div>
-                ))}
+                )}
+
+                <InvoiceActions type={type} addPage={addPage} handleSave={handleSave} saving={saving} saved={saved} />
+                <div className="inv-pages-container" style={{ display: "flex", flexDirection: "column", gap: 40, width: "100%", alignItems: "center", marginTop: 10 }}>
+                    {pages.map((page, idx) => (
+                        <div
+                            key={page.id}
+                            className="inv-screen-scale-holder"
+                            style={{ width: PAGE_WIDTH * screenScale, height: PAGE_HEIGHT * screenScale, boxShadow: "0 25px 80px rgba(0,0,0,0.5)", borderRadius: 8, background: "#fff", overflow: "hidden" }}
+                        >
+                            <div
+                                className="inv-screen-scale-wrap"
+                                style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, transform: `scale(${screenScale})`, transformOrigin: "top left", background: "#fff" }}
+                            >
+                                {isInbound ? <InboundInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
+                                    isOutbound ? <OutboundInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} netTotal={netTotal} delPage={delPage} pagesCount={pages.length} /> :
+                                        <AllocationInvoice page={page} pageIdx={idx} isLast={idx === pages.length - 1} meta={meta} MAX_ROWS={MAX_ROWS} updItem={updItem} delRow={delRow} addRow={addRow} sm={sm} subtotal={subtotal} remaining={remaining} delPage={delPage} pagesCount={pages.length} />}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

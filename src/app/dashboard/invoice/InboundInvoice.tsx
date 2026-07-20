@@ -3,8 +3,8 @@ import { Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InvoiceItem, Meta, PageData, fmt } from "./InvoiceUtils";
 
-const M = "#6B0C10";
-const ML = "#9B1520";
+const M = "#000000";
+const ML = "#000000";
 const GRAD = `linear-gradient(135deg, ${M} 0%, ${ML} 100%)`;
 
 interface Props {
@@ -66,8 +66,8 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                     })}
                 </div>
                 {/* ░░ BG DECORATION — bottom-left large arc ░░ */}
-                <div style={{ position: "absolute", bottom: -100, left: -100, width: 380, height: 380, borderRadius: "50%", border: `50px solid rgba(107,12,16,0.06)`, zIndex: 0, pointerEvents: "none" }} />
-                <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", border: `30px solid rgba(107,12,16,0.08)`, zIndex: 0, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", bottom: -100, left: -100, width: 380, height: 380, borderRadius: "50%", border: `50px solid rgba(17, 17, 17,0.06)`, zIndex: 0, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", border: `30px solid rgba(17, 17, 17,0.08)`, zIndex: 0, pointerEvents: "none" }} />
 
                 {/* ░░ LEFT ACCENT STRIP ░░ */}
                 <div style={{ position: "absolute", top: 0, left: 0, width: 7, height: "100%", background: GRAD, zIndex: 3 }} />
@@ -143,7 +143,7 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
 
                 {/* ░░ TABLE ░░ */}
                 <div style={{ paddingLeft: 36, paddingRight: 34, position: "relative", zIndex: 2 }}>
-                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 14px rgba(107,12,16,0.12)" }}>
+                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 14px rgba(17, 17, 17,0.12)" }}>
                         <thead>
                             <tr style={{ background: GRAD, height: 40 }}>
                                 {["Sr. #", "Description", "Vehicle", "Price", "Qty", "Total"].map((h, i) => (
@@ -154,7 +154,7 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                         <tbody>
                             <AnimatePresence mode="popLayout">
                                 {page.items.map((it: any, idx: number) => (
-                                    <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 36, background: idx % 2 === 1 ? `rgba(107,12,16,0.03)` : "#fff" }}>
+                                    <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 36, background: idx % 2 === 1 ? `rgba(17, 17, 17,0.03)` : "#fff" }}>
                                         <td style={tdc}>
                                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                                                 <span style={{ fontSize: 9, color: "#ccc", fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span>
@@ -177,7 +177,7 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                 {/* ░░ SUMMARY ░░ */}
                 {isLast && (
                     <div style={{ paddingLeft: 36, paddingRight: 34, paddingTop: 16, display: "flex", justifyContent: "flex-end", position: "relative", zIndex: 2 }}>
-                        <div style={{ width: 270, borderRadius: 10, overflow: "hidden", boxShadow: "0 3px 16px rgba(107,12,16,0.15)", border: `1px solid rgba(107,12,16,0.15)` }}>
+                        <div style={{ width: 270, borderRadius: 10, overflow: "hidden", boxShadow: "0 3px 16px rgba(17, 17, 17,0.15)", border: `1px solid rgba(17, 17, 17,0.15)` }}>
                             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid #f0f0f0", fontSize: 11 }}>
                                 <span style={{ fontWeight: 600, color: "#777" }}>Sub-total</span>
                                 <span style={{ fontWeight: 700 }}>Rs. {fmt(subtotal)}</span>
@@ -230,9 +230,9 @@ function CField({ icon, value, onChange, wide }: { icon: string; value: string; 
     return <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ fontSize: 10 }}>{icon}</span><input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="—" style={{ fontFamily: "inherit", fontSize: 10, color: "#555", background: "transparent", border: "none", borderBottom: "1px dashed #ddd", outline: "none", width: wide ? 160 : 110, cursor: "pointer" }} /></div>;
 }
 
-const delPSt: React.CSSProperties = { position: "absolute", top: -38, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: "#6B0C10", border: "1.5px solid rgba(107,12,16,0.25)", background: "#fff", borderRadius: 8, cursor: "pointer" };
+const delPSt: React.CSSProperties = { position: "absolute", top: -38, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: "#000000", border: "1.5px solid rgba(17, 17, 17,0.25)", background: "#fff", borderRadius: 8, cursor: "pointer" };
 const tdl: React.CSSProperties = { fontSize: 10, color: "#444", padding: "0 12px", borderBottom: "1px solid #eee", borderRight: "1px solid #eee", verticalAlign: "middle" };
 const tdc: React.CSSProperties = { ...tdl, textAlign: "center", position: "relative", borderLeft: "1px solid #eee" };
 const inp: React.CSSProperties = { width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: "'Montserrat',sans-serif", fontSize: 10, color: "#444", cursor: "pointer" };
-const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 9, padding: "5px 12px", border: "1.5px dashed rgba(107,12,16,0.25)", borderRadius: 7, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "#ccc" };
-const delRSt: React.CSSProperties = { background: "#fee2e2", border: "none", borderRadius: 4, color: "#6B0C10", cursor: "pointer", fontSize: 10, padding: "2px 6px", fontWeight: "bold" };
+const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 9, padding: "5px 12px", border: "1.5px dashed rgba(17, 17, 17,0.25)", borderRadius: 7, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "#ccc" };
+const delRSt: React.CSSProperties = { background: "#fee2e2", border: "none", borderRadius: 4, color: "#000000", cursor: "pointer", fontSize: 10, padding: "2px 6px", fontWeight: "bold" };

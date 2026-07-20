@@ -29,8 +29,8 @@ export interface PageData {
   items: InvoiceItem[];
 }
 
-export const R1 = "#6B0C10";
-export const R2 = "#A31620";
+export const R1 = "#000000";
+export const R2 = "#000000";
 export const GRAD = `linear-gradient(135deg, ${R1} 0%, ${R2} 100%)`;
 
 export const fmt = (n: number) => Number(n || 0).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

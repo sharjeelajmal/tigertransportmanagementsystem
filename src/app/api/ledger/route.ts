@@ -60,8 +60,23 @@ export async function GET(req: NextRequest) {
                 .sort({ date: 1, createdAt: 1 })
                 .lean();
 
+            // ── Bug Fix #4: Opening Balance ──────────────────────────────────────
+            let openingBalance = 0;
+            if (startDate) {
+                const pastEntries = await LedgerEntry.find({
+                    partyName: new RegExp(escapedName, 'i'),
+                    date: { $lt: new Date(`${startDate}T00:00:00`) }
+                }).lean();
+                
+                pastEntries.forEach((e: any) => {
+                    const debit = e.entryType === 'Debit' ? e.amount : 0;
+                    const credit = e.entryType === 'Credit' ? e.amount : 0;
+                    openingBalance += (debit - credit);
+                });
+            }
+
             // Compute running balance row-by-row (standard accounting ledger)
-            let runningBalance = 0;
+            let runningBalance = openingBalance;
             let totalDebit = 0;
             let totalCredit = 0;
 
@@ -84,6 +99,19 @@ export async function GET(req: NextRequest) {
                 };
             });
 
+            if (startDate && openingBalance !== 0) {
+                rows.unshift({
+                    _id: 'opening-balance',
+                    date: new Date(`${startDate}T00:00:00`).toISOString(),
+                    docNo: '-',
+                    narration: 'Opening Balance',
+                    entryType: openingBalance >= 0 ? 'Debit' : 'Credit',
+                    debit: openingBalance > 0 ? openingBalance : 0,
+                    credit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
+                    balance: openingBalance,
+                });
+            }
+
             return NextResponse.json({
                 success: true,
                 mode: 'party',
@@ -93,7 +121,7 @@ export async function GET(req: NextRequest) {
                     totalDebit,
                     totalCredit,
                     // positive = party owes us (receivable); negative = we owe them (payable)
-                    netBalance: totalDebit - totalCredit,
+                    netBalance: runningBalance,
                 },
             });
         }

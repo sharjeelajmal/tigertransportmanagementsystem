@@ -47,7 +47,7 @@
     left: 0;
     right: 0;
     height: 80px;
-    background: linear-gradient(135deg, #7B0D12 0%, #B91C22 60%, #7B0D12 100%);
+    background: linear-gradient(135deg, #111111 0%, #333333 60%, #111111 100%);
     border-radius: 0 0 0 0;
     z-index: 2;
 }
@@ -60,7 +60,7 @@
     right: 0;
     width: 45%;
     height: 36px;
-    background: linear-gradient(135deg, #7B0D12 0%, #B91C22 100%);
+    background: linear-gradient(135deg, #111111 0%, #333333 100%);
     clip-path: polygon(0 0, 100% 0, 100% 100%);
     z-index: 3;
 }
@@ -112,7 +112,7 @@
     width: 16px;
     height: 16px;
     min-width: 16px;
-    background: #7B0D12;
+    background: #111111;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -164,7 +164,7 @@
 }
 
 .inb-name-bar {
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     border-radius: 8px;
     padding: 8px 14px;
     margin-bottom: 8px;
@@ -231,7 +231,7 @@
 .inb-client-field-icon {
     width: 13px;
     height: 13px;
-    background: #7B0D12;
+    background: #111111;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -304,7 +304,7 @@
 }
 
 .inb-table thead tr {
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     height: 26px;
 }
 
@@ -451,7 +451,7 @@
 
 .inb-summary-row:last-child {
     border-bottom: none;
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     border-radius: 0 0 10px 10px;
 }
 
@@ -496,7 +496,7 @@
     left: 0;
     right: 0;
     height: 40px;
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     z-index: 2;
 }
 
@@ -507,7 +507,7 @@
     left: 0;
     right: 40%;
     height: 16px;
-    background: #7B0D12;
+    background: #111111;
     clip-path: polygon(0 100%, 100% 0, 0 0);
 }
 
@@ -534,7 +534,7 @@
     right: -20px;
     width: 310px;
     height: 155px;
-    background: linear-gradient(160deg, #9B1218, #7B0D12);
+    background: linear-gradient(160deg, #222222, #111111);
     transform: skewX(-15deg);
     z-index: 3;
     border-radius: 4px;
@@ -546,7 +546,7 @@
     right: 195px;
     width: 160px;
     height: 130px;
-    background: #B91C22;
+    background: #333333;
     transform: skewX(-15deg);
     opacity: 0.65;
     z-index: 2;
@@ -559,7 +559,7 @@
     right: 315px;
     width: 95px;
     height: 100px;
-    background: #C84040;
+    background: #555555;
     transform: skewX(-15deg);
     opacity: 0.38;
     z-index: 1;
@@ -608,7 +608,7 @@
 .out-contact-icon {
     width: 15px;
     height: 15px;
-    background: #7B0D12;
+    background: #111111;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -656,18 +656,18 @@
     font-family: 'Montserrat', sans-serif;
     font-size: 22px;
     font-weight: 800;
-    color: #7B0D12;
+    color: #111111;
     text-transform: uppercase;
     background: transparent;
     border: none;
-    border-bottom: 2.5px solid #7B0D12;
+    border-bottom: 2.5px solid #111111;
     outline: none;
     width: 100%;
     padding-bottom: 3px;
 }
 
 .out-name-input::placeholder {
-    color: #f5c0c0;
+    color: #e6e6e6;
 }
 
 /* Big "Invoice" title right */
@@ -763,7 +763,7 @@
 .out-client-field-icon {
     width: 13px;
     height: 13px;
-    background: #7B0D12;
+    background: #111111;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -844,7 +844,7 @@
 }
 
 .out-table thead tr {
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     height: 26px;
 }
 
@@ -990,7 +990,7 @@
 
 .out-summary-row:last-child {
     border-bottom: none;
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     border-radius: 0 0 10px 10px;
 }
 
@@ -1035,7 +1035,7 @@
     left: 0;
     right: 0;
     height: 40px;
-    background: linear-gradient(135deg, #7B0D12, #B91C22);
+    background: linear-gradient(135deg, #111111, #333333);
     z-index: 2;
     overflow: hidden;
 }
@@ -1165,4 +1165,30 @@
         transform: scale(0.5);
         margin-bottom: -500px;
     }
+}
+/* TRUE BLACK AND WHITE THEME */
+.inv-page-wrap, .inv-page-wrap * {
+  color: #000 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-color: #000 !important;
+}
+.inv-page-wrap img {
+  filter: grayscale(100%) brightness(0) !important;
+}
+.inv-page-wrap table th {
+  border-bottom: 2px solid #000 !important;
+}
+.inv-page-wrap table td, .inv-page-wrap table th {
+  border-left: 1px solid #000 !important;
+  border-right: 1px solid #000 !important;
+}
+.inv-page-wrap table {
+  border-top: 2px solid #000 !important;
+  border-bottom: 2px solid #000 !important;
+}
+.inv-page-wrap div[style*="height: 44"] {
+  border-top: 2px solid #000 !important;
+  border-bottom: 2px solid #000 !important;
 }
