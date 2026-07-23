@@ -111,15 +111,13 @@ export async function POST(req: NextRequest) {
                     (allocation as any).allocationNo ||
                     `ALLOC-${String(allocation._id).slice(-6).toUpperCase()}`;
 
-                // Build narration from vehicle info
-                const vehicleNo: string =
-                    body.vehicles?.[0]?.vehicleNo || 'N/A';
-                const narration = `Truck No: ${vehicleNo} — Outsider Allocation`;
+                // Client Excel pattern: outsider bill → Credit + ADD OUTSIDE BILL
+                const narration = 'ADD OUTSIDE BILL';
 
                 await LedgerEntry.create({
                     partyName: outsiderName,
                     partyType: 'Outsider',
-                    entryType: 'Credit',   // payable to outsider → Credit
+                    entryType: 'Credit',   // outsider bill → Credit
                     date: entryDate,
                     docNo,
                     narration,

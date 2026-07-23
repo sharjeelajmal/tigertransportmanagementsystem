@@ -36,7 +36,10 @@ export const GRAD = `linear-gradient(135deg, ${R1} 0%, ${R2} 100%)`;
 export const fmt = (n: number) => Number(n || 0).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const makeItem = (): InvoiceItem => ({ id: `i_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, cargoDetails: "", vehicle: "", rate: 0, qty: 1, amount: 0 });
 export const today = () => new Date().toLocaleDateString("en-GB");
-export const genNo = () => { const d = new Date(); return `TTM-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${Math.floor(1000 + Math.random() * 9000)}`; };
+export const genNo = (type: string = "inbound") => {
+  const prefix = String(type).toLowerCase() === "allocation" ? "OT" : "TT";
+  return `${prefix}${String(Math.floor(1 + Math.random() * 9999)).padStart(4, "0")}`;
+};
 
 export const downloadInvoicePDF = async (filename: string) => {
   const container = document.querySelector('.inv-pages-container') as HTMLElement;
@@ -142,6 +145,7 @@ export const PRINT_CSS = `
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    color-adjust: exact !important;
     box-sizing: border-box !important;
   }
 
@@ -149,27 +153,34 @@ export const PRINT_CSS = `
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    color: #111 !important;
     overflow: visible !important;
   }
 
   @page {
-    size: 210mm 297mm;
-    margin: 0mm;
+    size: A4 portrait;
+    margin: 0;
   }
 
-  /* Hide all UI controls */
-  .no-print, .action-bar, header, aside { display: none !important; }
+  /* Hide UI chrome */
+  .no-print,
+  .action-bar,
+  header,
+  aside,
+  nav,
+  button.no-print {
+    display: none !important;
+  }
 
-  /* Pages container: remove screen gap */
   .inv-pages-container {
     display: block !important;
     gap: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 210mm !important;
+    background: #fff !important;
   }
 
-  /* Outer wrapper */
   .inv-screen-scale-holder {
     width: 210mm !important;
     height: auto !important;
@@ -192,49 +203,90 @@ export const PRINT_CSS = `
     overflow: hidden !important;
     page-break-after: always !important;
     break-after: page !important;
+    background: #fff !important;
   }
 
-  /* Last outer wrapper: no extra page break */
   .inv-outer:last-child {
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
 
-  /* The actual invoice page */
   .inv-page-wrap {
     width: 210mm !important;
-    height: 296mm !important;
-    min-height: unset !important;
-    max-height: 296mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     overflow: hidden !important;
     box-shadow: none !important;
+    border: none !important;
     border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* Make sure the main app containers don't add space */
-  main, body, html, [class*="min-h"], .invoice-print-root { 
-    min-height: unset !important; 
+  /* Keep critical blocks together */
+  .inv-summary,
+  .inv-footer,
+  table {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr, td, th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Borders stay visible on laser/inkjet */
+  table,
+  th,
+  td,
+  .inv-page-wrap [style*="border"] {
+    border-color: #222 !important;
+  }
+
+  main,
+  body,
+  html,
+  [class*="min-h"],
+  .invoice-print-root {
+    min-height: unset !important;
     height: auto !important;
     padding: 0 !important;
     margin: 0 !important;
-    background: transparent !important;
+    background: #fff !important;
   }
 
-  input, textarea {
+  input,
+  textarea {
     border: none !important;
     background: transparent !important;
     outline: none !important;
+    box-shadow: none !important;
     padding: 0 !important;
     resize: none !important;
+    color: #111 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
   }
 
   input[type=number]::-webkit-inner-spin-button,
   input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  img {
+    max-width: 100% !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 }
 `;

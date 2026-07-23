@@ -1,37 +1,42 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Invoice from '@/models/Invoice';
+import { formatPrefixedInvoiceNo, invoiceNumberPrefix, parseInvoiceSerial } from '@/lib/ledgerRules';
 
-// CRITICAL: Disable Next.js route caching for this endpoint.
-// Without this, Next.js returns a stale cached response and the
-// invoice number never increments past 0001.
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+/**
+ * GET /api/invoices/next-number?type=inbound|outbound|allocation
+ * Returns TT0001 for customer bills, OT0001 for outsider (allocation) bills.
+ */
+export async function GET(request: NextRequest) {
     try {
         await dbConnect();
 
-        // Find the invoice with the highest numeric invoice number.
-        // collation with numericOrdering ensures "0009" < "0010" is respected.
-        const latestInvoice = await Invoice.findOne({ invoiceNo: { $regex: /^\d+$/ } })
-            .sort({ invoiceNo: -1 })
-            .collation({ locale: 'en_US', numericOrdering: true })
+        const { searchParams } = new URL(request.url);
+        const type = (searchParams.get('type') || 'inbound').toLowerCase();
+        const prefix = invoiceNumberPrefix(type);
+
+        // Match prefixed series (TT#### / OT####). For TT, also include legacy digit-only numbers.
+        const regex =
+            prefix === 'TT'
+                ? /^(TT)?\d+$/i
+                : /^OT\d+$/i;
+
+        const candidates = await Invoice.find({ invoiceNo: { $regex: regex } })
+            .select('invoiceNo')
             .lean();
 
-        let nextNumber = 1;
-        if (latestInvoice && latestInvoice.invoiceNo) {
-            const currentNum = parseInt(String(latestInvoice.invoiceNo), 10);
-            if (!isNaN(currentNum)) {
-                nextNumber = currentNum + 1;
-            }
+        let maxSerial = 0;
+        for (const inv of candidates) {
+            const serial = parseInvoiceSerial(String(inv.invoiceNo || ''));
+            if (serial !== null && serial > maxSerial) maxSerial = serial;
         }
 
-        // Format as 4 digits, e.g., "0001", "0002", "0010", ...
-        const nextInvoiceNo = String(nextNumber).padStart(4, '0');
+        const nextInvoiceNo = formatPrefixedInvoiceNo(prefix, maxSerial + 1);
 
-        return NextResponse.json({ success: true, nextInvoiceNo });
+        return NextResponse.json({ success: true, nextInvoiceNo, prefix });
     } catch (error) {
-        // Log server-side only — never expose internal errors to the client
         console.error('[invoices/next-number] DB error:', error);
         return NextResponse.json(
             { success: false, error: 'Failed to fetch next invoice number' },

@@ -85,12 +85,12 @@ export default function InvoicePageContent() {
         const phoneParam = sp.get("phone");
         const addressParam = sp.get("address");
 
-        fetch("/api/invoices/next-number").then(r => r.json()).then(data => {
+        fetch(`/api/invoices/next-number?type=${encodeURIComponent(type)}`).then(r => r.json()).then(data => {
             setMeta(m => ({
                 ...m,
                 billingDate: today(),
                 invoiceDate: today(),
-                invoiceNo: data.success ? data.nextInvoiceNo : genNo(),
+                invoiceNo: data.success ? data.nextInvoiceNo : genNo(type),
                 clientName: nameParam || m.clientName,
                 clientPhone: phoneParam || m.clientPhone,
                 clientAddress: addressParam || m.clientAddress
@@ -102,7 +102,7 @@ export default function InvoicePageContent() {
                 ...m,
                 billingDate: today(),
                 invoiceDate: today(),
-                invoiceNo: genNo(),
+                invoiceNo: genNo(type),
                 clientName: nameParam || m.clientName,
                 clientPhone: phoneParam || m.clientPhone,
                 clientAddress: addressParam || m.clientAddress

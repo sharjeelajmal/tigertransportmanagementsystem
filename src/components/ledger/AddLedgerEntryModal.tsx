@@ -17,9 +17,12 @@ interface AddLedgerEntryModalProps {
 }
 
 const entryTypeOptions = [
-    { value: "Credit", label: "Receipt — Cash Received from Party" },
-    { value: "Debit", label: "Payment — Cash Paid to Party" },
+    { value: "Credit", label: "Cash Received — Credit" },
+    { value: "Debit", label: "Cash Paid — Debit" },
 ];
+
+const narrationFor = (type: "Debit" | "Credit") =>
+    type === "Credit" ? "CASH RECEIVED" : "CASH PAID";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -36,7 +39,7 @@ export default function AddLedgerEntryModal({
     const [entryType, setEntryType] = useState<"Debit" | "Credit">("Credit");
     const [date, setDate] = useState(todayStr);
     const [docNo, setDocNo] = useState("");
-    const [narration, setNarration] = useState("");
+    const [narration, setNarration] = useState("CASH RECEIVED");
     const [amount, setAmount] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -45,7 +48,7 @@ export default function AddLedgerEntryModal({
         setEntryType("Credit");
         setDate(todayStr);
         setDocNo("");
-        setNarration("");
+        setNarration("CASH RECEIVED");
         setAmount("");
         setToast(null);
     };
@@ -58,7 +61,7 @@ export default function AddLedgerEntryModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const parsed = parseFloat(amount);
-        if (!narration.trim() || !date || isNaN(parsed) || parsed <= 0) {
+        if (!date || isNaN(parsed) || parsed <= 0) {
             setToast({ type: "error", msg: "Please fill all required fields correctly." });
             return;
         }
@@ -76,7 +79,7 @@ export default function AddLedgerEntryModal({
                     entryType,
                     date,
                     docNo: docNo.trim() || undefined,
-                    narration: narration.trim(),
+                    narration: narrationFor(entryType),
                     amount: parsed,
                 }),
             });
@@ -154,7 +157,11 @@ export default function AddLedgerEntryModal({
                                     label="Entry Type"
                                     options={entryTypeOptions}
                                     value={entryType}
-                                    onChange={(v) => setEntryType(v as "Debit" | "Credit")}
+                                    onChange={(v) => {
+                                        const next = v as "Debit" | "Credit";
+                                        setEntryType(next);
+                                        setNarration(narrationFor(next));
+                                    }}
                                     required
                                 />
 
@@ -185,18 +192,16 @@ export default function AddLedgerEntryModal({
                                     />
                                 </div>
 
-                                {/* Narration */}
+                                {/* Narration (fixed by Excel pattern) */}
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                        Narration <span style={{ color: "var(--primary)" }}>*</span>
+                                        Narration
                                     </label>
                                     <input
                                         type="text"
                                         value={narration}
-                                        onChange={(e) => setNarration(e.target.value)}
-                                        placeholder="e.g. Cash Received — August Payment"
-                                        required
-                                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                                        readOnly
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-sm font-bold text-gray-800 outline-none"
                                     />
                                 </div>
 

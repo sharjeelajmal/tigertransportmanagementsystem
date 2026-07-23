@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Invoice from '@/models/Invoice';
 import LedgerEntry from '@/models/LedgerEntry';
+import { invoiceLedgerMeta, parseLedgerDate } from '@/lib/ledgerRules';
 
 export async function GET(request: NextRequest) {
     try {
@@ -55,11 +56,9 @@ export async function POST(request: NextRequest) {
 
         const invoice = await Invoice.create(body);
 
-        // ── Auto-push Debit entry to LedgerEntry ──────────────────────────────
-        // Read partyName from the saved invoice doc;
-        // allocation invoices store the vendor in partyName, all others use clientName.
-        // Also fall back to the raw body in case mongoose lean doesn't surface the field.
+        // ── Auto-push ledger entry (TT → Debit / OT → Credit) ─────────────────
         const rawType: string = (invoice.type || body.type || '').toLowerCase();
+        const ledger = invoiceLedgerMeta(rawType);
         const resolvedPartyName: string = (
             rawType === 'allocation'
                 ? (invoice.partyName || body.partyName || '')
@@ -68,55 +67,33 @@ export async function POST(request: NextRequest) {
 
         if (resolvedPartyName) {
             try {
-                // ── Build narration from billingDate ──────────────────────────
-                // billingDate is stored as YYYY-MM-DD string.
-                // We split manually instead of using new Date() to avoid UTC offset.
                 const billingDateStr: string = invoice.billingDate || body.billingDate || '';
-                let billingLabel = 'Invoice Amount';
-                if (billingDateStr) {
-                    const parts = billingDateStr.split('-');
-                    if (parts.length >= 2) {
-                        const year = parts[0];
-                        const month = parseInt(parts[1], 10) - 1; // 0-indexed
-                        const monthName = new Date(Number(year), month, 1).toLocaleString('en-US', { month: 'long' });
-                        billingLabel = `${monthName} ${year} Bills Amount`;
-                    }
-                }
-
-                let entryDate = new Date();
-                const rawDate = billingDateStr || invoice.createdAt;
-                if (rawDate) {
-                    const parsed = new Date(rawDate);
-                    if (!isNaN(parsed.getTime())) entryDate = parsed;
-                }
+                const entryDate = parseLedgerDate(billingDateStr || invoice.createdAt);
 
                 await LedgerEntry.create({
                     partyName: resolvedPartyName,
-                    partyType: rawType === 'allocation' ? 'Outsider' : 'Customer',
-                    entryType: 'Debit',
+                    partyType: ledger.partyType,
+                    entryType: ledger.entryType,
                     date: entryDate,
                     docNo: invoice.invoiceNo || body.invoiceNo || 'N/A',
-                    narration: billingLabel,
+                    narration: ledger.narration,
                     amount: Math.max(0, Number(invoice.totalAmount ?? body.totalAmount) || 0),
                     sourceType: 'Invoice',
                     sourceId: String(invoice._id),
                 });
 
-                console.log(`[Ledger] Debit entry created → Party: "${resolvedPartyName}" | Doc: ${invoice.invoiceNo} | Amount: ${invoice.totalAmount}`);
+                console.log(`[Ledger] ${ledger.entryType} entry created → Party: "${resolvedPartyName}" | Doc: ${invoice.invoiceNo} | ${ledger.narration}`);
             } catch (ledgerErr) {
-                // Ledger write failure must NOT rollback the invoice
-                console.error('[Ledger] Auto-debit failed (non-critical):', ledgerErr);
+                console.error('[Ledger] Auto ledger write failed (non-critical):', ledgerErr);
             }
         } else {
             console.warn('[Ledger] Skipped ledger entry — no party name found on invoice:', invoice.invoiceNo);
         }
-        // ─────────────────────────────────────────────────────────────────────
 
         return NextResponse.json({ success: true, data: invoice }, { status: 201 });
     } catch (error: any) {
         console.error('API Error:', error);
-        
-        // Handle MongoDB duplicate key error for invoiceNo
+
         if (error.code === 11000 && error.keyPattern && error.keyPattern.invoiceNo) {
             return NextResponse.json(
                 { success: false, error: 'Yeh Invoice Number already exist karta hai. Please page refresh karein taake naya number assign ho.' },
