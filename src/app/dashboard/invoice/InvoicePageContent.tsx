@@ -24,6 +24,7 @@ interface SavedInvoicePayload {
     pickupFrom?: string;
     deliverTo?: string;
     items: InvoiceItem[];
+    totalAmount?: number;
 }
 
 export default function InvoicePageContent() {
@@ -31,7 +32,7 @@ export default function InvoicePageContent() {
     const type = sp.get("type") || "inbound";
     const invoiceId = sp.get("id");
     const isInbound = type === "inbound", isOutbound = type === "outbound", isAllocation = type === "allocation";
-    const MAX_ROWS = isAllocation ? 5 : isOutbound ? 7 : 12;
+    const MAX_ROWS = isAllocation ? 10 : isOutbound ? 7 : 12;
 
     const [ready, setReady] = useState(false);
     const [pages, setPages] = useState<PageData[]>([]);
@@ -39,6 +40,7 @@ export default function InvoicePageContent() {
     const [saving, setSaving] = useState(false), [saved, setSaved] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const [screenScale, setScreenScale] = useState(1);
+    const [isDirty, setIsDirty] = useState(false);
 
     const PAGE_WIDTH = 794;
     const PAGE_HEIGHT = 1123;
@@ -61,8 +63,27 @@ export default function InvoicePageContent() {
                     return;
                 }
                 setMeta({ invoiceNo: f.invoiceNo, billingDate: f.billingDate, invoiceDate: f.invoiceDate, clientName: f.clientName || "", clientPhone: f.clientPhone || "", clientAddress: f.clientAddress || "", remarks: f.remarks || "", discount: f.discount || 0, advance: f.advance || 0, partyName: f.partyName || "", vehicleNo: f.vehicleNo || "", vehicleDetail: f.vehicleDetail || "", pickupFrom: f.pickupFrom || "", deliverTo: f.deliverTo || "" });
-                setPages([{ id: "p1", items: f.items.length ? f.items : [makeItem()] }]);
+                
+                const itemsToSet = f.items.length ? f.items : [makeItem()];
+                // Backward compatibility for old items where amount was stripped
+                
+                // If it's an allocation invoice and NO items have an amount, put the total on the last item
+                if (type === "allocation" && f.totalAmount) {
+                    const hasAnyAmount = itemsToSet.some(it => it.amount);
+                    if (!hasAnyAmount) {
+                        itemsToSet[itemsToSet.length - 1].amount = (f.totalAmount || 0) + (f.advance || 0) + (f.discount || 0);
+                    }
+                }
+
+                itemsToSet.forEach(it => {
+                    if (!it.amount && it.rate && it.qty) {
+                        it.amount = it.rate * it.qty;
+                    }
+                });
+
+                setPages([{ id: "p1", items: itemsToSet }]);
                 setReady(true);
+                setIsDirty(false);
 
                 // Handle auto-download from list page
                 if (sp.get("download") === "true") {
@@ -129,16 +150,16 @@ export default function InvoicePageContent() {
     const netTotal = useMemo(() => subtotal - (meta.discount || 0), [subtotal, meta.discount]);
     const remaining = useMemo(() => netTotal - (meta.advance || 0), [netTotal, meta.advance]);
 
-    const sm = <K extends keyof Meta>(k: K, v: Meta[K]) => setMeta(m => ({ ...m, [k]: v }));
-    const addPage = () => setPages(p => [...p, { id: `p${Date.now()}`, items: [makeItem()] }]);
-    const delPage = (pid: string) => pages.length > 1 && setPages(p => p.filter(x => x.id !== pid));
-    const addRow = (pid: string) => setPages(ps => ps.map(p => {
+    const sm = <K extends keyof Meta>(k: K, v: Meta[K]) => { setIsDirty(true); setMeta(m => ({ ...m, [k]: v })); };
+    const addPage = () => { setIsDirty(true); setPages(p => [...p, { id: `p${Date.now()}`, items: [makeItem()] }]); };
+    const delPage = (pid: string) => { setIsDirty(true); pages.length > 1 && setPages(p => p.filter(x => x.id !== pid)); };
+    const addRow = (pid: string) => { setIsDirty(true); setPages(ps => ps.map(p => {
         if (p.id !== pid) return p;
         if (p.items.length >= MAX_ROWS) { alert(`Max ${MAX_ROWS} rows.`); return p; }
         return { ...p, items: [...p.items, makeItem()] };
-    }));
-    const delRow = (pid: string, iid: string) => setPages(ps => ps.map(p => p.id === pid && p.items.length > 1 ? { ...p, items: p.items.filter(i => i.id !== iid) } : p));
-    const updItem = <K extends keyof InvoiceItem>(pid: string, iid: string, k: K, v: InvoiceItem[K]) => setPages(ps => ps.map(p => {
+    })); };
+    const delRow = (pid: string, iid: string) => { setIsDirty(true); setPages(ps => ps.map(p => p.id === pid && p.items.length > 1 ? { ...p, items: p.items.filter(i => i.id !== iid) } : p)); };
+    const updItem = <K extends keyof InvoiceItem>(pid: string, iid: string, k: K, v: InvoiceItem[K]) => { setIsDirty(true); setPages(ps => ps.map(p => {
         if (p.id !== pid) return p;
         return {
             ...p,
@@ -153,11 +174,11 @@ export default function InvoicePageContent() {
                 return updated;
             })
         };
-    }));
+    })); };
 
     // Auto-save logic for existing invoices
     useEffect(() => {
-        if (!invoiceId || !ready) return;
+        if (!invoiceId || !ready || !isDirty) return;
         
         const timer = setTimeout(async () => {
             try {
@@ -170,7 +191,7 @@ export default function InvoicePageContent() {
         }, 1500);
 
         return () => clearTimeout(timer);
-    }, [meta, pages, subtotal, netTotal, remaining, invoiceId, type, ready, isAllocation]);
+    }, [meta, pages, subtotal, netTotal, remaining, invoiceId, type, ready, isAllocation, isDirty]);
 
     const handleSave = async () => {
         setSaving(true);

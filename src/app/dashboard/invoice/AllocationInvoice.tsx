@@ -61,29 +61,29 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
 
                 {/* ── PARTY + VEHICLE ── */}
                 <div style={{ padding: "16px 40px 0", display: "flex", gap: 14 }}>
-                    <div style={{ flex: 1.4, border: `1px solid ${LINE}`, padding: "16px 18px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${HAIR}` }}>Party / Outsider</div>
+                    <div style={{ flex: 1.4, border: `1px solid ${LINE}`, padding: "10px 14px" }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${HAIR}` }}>Party / Outsider</div>
                         <FieldLabel>Name</FieldLabel>
                         <input type="text" value={meta.partyName} onChange={e => sm("partyName", e.target.value)} placeholder="Outsider name"
-                            style={{ ...valueInp, fontSize: 14, fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }} />
+                            style={{ ...valueInp, fontSize: 14, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }} />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             <div>
                                 <FieldLabel>Pickup</FieldLabel>
-                                <textarea value={meta.pickupFrom} onChange={e => sm("pickupFrom", e.target.value)} placeholder="Enter pickup…" rows={2}
+                                <textarea value={meta.pickupFrom} onChange={e => sm("pickupFrom", e.target.value)} placeholder="Enter pickup…" rows={1}
                                     style={{ ...valueInp, resize: "none", lineHeight: 1.45 }} />
                             </div>
                             <div>
                                 <FieldLabel>Destination</FieldLabel>
-                                <textarea value={meta.deliverTo} onChange={e => sm("deliverTo", e.target.value)} placeholder="Enter destination…" rows={2}
+                                <textarea value={meta.deliverTo} onChange={e => sm("deliverTo", e.target.value)} placeholder="Enter destination…" rows={1}
                                     style={{ ...valueInp, resize: "none", lineHeight: 1.45 }} />
                             </div>
                         </div>
                     </div>
-                    <div style={{ flex: 1, border: `1px solid ${LINE}`, padding: "16px 18px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${HAIR}` }}>Vehicle Info</div>
+                    <div style={{ flex: 1, border: `1px solid ${LINE}`, padding: "10px 14px" }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${HAIR}` }}>Vehicle Info</div>
                         <FieldLabel>Vehicle No.</FieldLabel>
                         <input type="text" value={meta.vehicleNo} onChange={e => sm("vehicleNo", e.target.value)} placeholder="Enter vehicle no."
-                            style={{ ...valueInp, fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }} />
+                            style={{ ...valueInp, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }} />
                         <FieldLabel>Detail</FieldLabel>
                         <input type="text" value={meta.vehicleDetail} onChange={e => sm("vehicleDetail", e.target.value)} placeholder="Enter detail"
                             style={{ ...valueInp, fontWeight: 700, textTransform: "uppercase" }} />

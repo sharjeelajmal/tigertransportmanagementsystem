@@ -21,6 +21,7 @@ export interface IInvoice extends Document {
         vehicle: string;
         rate: number;
         qty: number;
+        amount: number;
     }[];
     subtotal: number;
     discount: number;
@@ -52,6 +53,7 @@ const InvoiceSchema: Schema = new Schema({
             vehicle: { type: String },
             rate: { type: Number, required: true },
             qty: { type: Number, required: true },
+            amount: { type: Number },
         },
     ],
     subtotal: { type: Number, required: true },

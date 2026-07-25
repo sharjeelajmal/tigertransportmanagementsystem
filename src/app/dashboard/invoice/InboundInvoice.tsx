@@ -85,43 +85,40 @@ export default function InboundInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, 
                         <MetaField label="Billing Date" value={meta.billingDate} onChange={v => sm("billingDate", v)} />
                         <MetaField label="Invoice Date" value={meta.invoiceDate} onChange={v => sm("invoiceDate", v)} />
                     </div>
-                    <div style={{ textAlign: "right", flexShrink: 0, border: `1.5px solid ${LINE}`, padding: "10px 16px", minWidth: 150 }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>Total Due</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, marginTop: 3, letterSpacing: "-0.01em" }}>Rs. {fmt(netTotal)}</div>
-                    </div>
                 </div>
 
-                {/* ── CLIENT + REMARKS ── */}
+                {/* ── CLIENT ── */}
                 <div style={{ padding: "16px 40px 0", display: "flex", gap: 14 }}>
-                    <div style={{ flex: 1.4, border: `1px solid ${LINE}`, padding: "16px 18px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${HAIR}` }}>Bill To</div>
-                        <div style={{ position: "relative" }}>
-                            <FieldLabel>Client Name</FieldLabel>
-                            <input type="text" value={meta.clientName} onChange={e => handleNameChange(e.target.value)} onFocus={() => meta.clientName && setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 200)} placeholder="Client name"
-                                style={{ ...valueInp, fontSize: 14, fontWeight: 700, marginBottom: 10 }} />
-                            <AnimatePresence>
-                                {showSugg && suggestions.length > 0 && (
-                                    <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                        style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: `1px solid ${LINE}`, zIndex: 100, maxHeight: 150, overflowY: "auto" }} className="no-print">
-                                        {suggestions.map(c => (
-                                            <div key={c._id} onClick={() => selectSugg(c)} style={{ padding: "8px 12px", fontSize: 12, borderBottom: "1px solid #eee", cursor: "pointer", display: "flex", justifyContent: "space-between", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
-                                                <span style={{ fontWeight: 700 }}>{c.customerName}</span>
-                                                <span style={{ fontSize: 10, color: MUTED }}>{c.mobileNo}</span>
-                                            </div>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                        <FieldLabel>Phone</FieldLabel>
-                        <input type="text" value={meta.clientPhone} onChange={e => sm("clientPhone", e.target.value)} placeholder="—" style={{ ...valueInp, marginBottom: 10 }} />
-                        <FieldLabel>Address</FieldLabel>
-                        <input type="text" value={meta.clientAddress} onChange={e => sm("clientAddress", e.target.value)} placeholder="—" style={valueInp} />
-                    </div>
                     <div style={{ flex: 1, border: `1px solid ${LINE}`, padding: "16px 18px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${HAIR}` }}>Remarks</div>
-                        <textarea value={meta.remarks} onChange={e => sm("remarks", e.target.value)} placeholder="Notes or special instructions..." rows={5}
-                            style={{ ...valueInp, resize: "none", lineHeight: 1.55, minHeight: 88 }} />
+                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${HAIR}` }}>Bill To</div>
+                        <div style={{ display: "flex", gap: 16 }}>
+                            <div style={{ flex: 1, position: "relative" }}>
+                                <FieldLabel>Client Name</FieldLabel>
+                                <input type="text" value={meta.clientName} onChange={e => handleNameChange(e.target.value)} onFocus={() => meta.clientName && setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 200)} placeholder="Client name"
+                                    style={{ ...valueInp, fontSize: 14, fontWeight: 700 }} />
+                                <AnimatePresence>
+                                    {showSugg && suggestions.length > 0 && (
+                                        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                            style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: `1px solid ${LINE}`, zIndex: 100, maxHeight: 150, overflowY: "auto" }} className="no-print">
+                                            {suggestions.map(c => (
+                                                <div key={c._id} onClick={() => selectSugg(c)} style={{ padding: "8px 12px", fontSize: 12, borderBottom: "1px solid #eee", cursor: "pointer", display: "flex", justifyContent: "space-between", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                                                    <span style={{ fontWeight: 700 }}>{c.customerName}</span>
+                                                    <span style={{ fontSize: 10, color: MUTED }}>{c.mobileNo}</span>
+                                                </div>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <FieldLabel>Phone</FieldLabel>
+                                <input type="text" value={meta.clientPhone} onChange={e => sm("clientPhone", e.target.value)} placeholder="—" style={{ ...valueInp, fontSize: 14 }} />
+                            </div>
+                            <div style={{ flex: 1.5 }}>
+                                <FieldLabel>Address</FieldLabel>
+                                <input type="text" value={meta.clientAddress} onChange={e => sm("clientAddress", e.target.value)} placeholder="—" style={{ ...valueInp, fontSize: 14 }} />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

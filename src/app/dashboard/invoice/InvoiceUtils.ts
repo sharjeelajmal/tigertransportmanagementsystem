@@ -289,5 +289,15 @@ export const PRINT_CSS = `
     -webkit-print-color-adjust: exact !important;
   }
 }
+
+/* Hide spin buttons globally (screen and print) */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+input[type=number] {
+  -moz-appearance: textfield !important;
+}
 `;
 
