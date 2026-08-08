@@ -16,7 +16,7 @@ export default function InvoiceActions({ type, addPage, handleSave, saving, save
         <div className="action-bar no-print" style={{ display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "hidden", justifyContent: "flex-start", alignItems: "center", background: "#fff", padding: "10px 14px", borderRadius: 14, boxShadow: "0 4px 24px rgba(0,0,0,0.13)", marginBottom: 20, position: "sticky", top: 8, zIndex: 100, maxWidth: "100%", whiteSpace: "nowrap" }}>
             <ABtn icon={<ArrowLeft size={13} />} label="Back" onClick={() => router.back()} />
             <div style={{ width: 1, height: 26, background: "#eee", flexShrink: 0 }} />
-            <span style={{ fontSize: 9, fontWeight: 800, color: "#6B0C10", background: "rgba(107, 12, 16, 0.08)", padding: "3px 11px", borderRadius: 20, letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0 }}>{type === "inbound" ? "CUSTOMER" : type}</span>
+            <span style={{ fontSize: 9, fontWeight: 800, color: "#6B0C10", background: "rgba(107, 12, 16, 0.08)", padding: "3px 11px", borderRadius: 20, letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0 }}>{type === "inbound" ? "CUSTOMER" : type === "allocation" ? "OUTSIDER" : type}</span>
             <div style={{ width: 1, height: 26, background: "#eee", flexShrink: 0 }} />
             <ABtn icon={<FilePlus size={13} />} label="Add Page" onClick={addPage} />
             <div style={{ width: 1, height: 26, background: "#eee", flexShrink: 0 }} />

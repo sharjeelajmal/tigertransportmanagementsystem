@@ -19,6 +19,37 @@ interface Props {
 }
 
 export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, updItem, delRow, addRow, sm, subtotal, remaining, delPage, pagesCount }: Props) {
+    const [allOutsiders, setAllOutsiders] = React.useState<any[]>([]);
+    const [suggestions, setSuggestions] = React.useState<any[]>([]);
+    const [showSugg, setShowSugg] = React.useState(false);
+
+    React.useEffect(() => {
+        fetch("/api/outsiders").then(r => r.json()).then(data => {
+            if (data.success) setAllOutsiders(data.data);
+        });
+    }, []);
+
+    const handleNameChange = (val: string) => {
+        sm("clientName", val);
+        if (val.length > 0) {
+            const filtered = allOutsiders.filter(c =>
+                c.outsiderName.toLowerCase().includes(val.toLowerCase())
+            );
+            setSuggestions(filtered);
+            setShowSugg(true);
+        } else {
+            setSuggestions([]);
+            setShowSugg(false);
+        }
+    };
+
+    const selectSugg = (c: any) => {
+        sm("clientName", c.outsiderName);
+        sm("clientPhone", c.mobileNo || "");
+        sm("clientAddress", c.address || "");
+        setShowSugg(false);
+    };
+
     const onEnter = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -51,42 +82,43 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                 <div style={{ margin: "0 40px", padding: "14px 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, borderBottom: `1px solid ${HAIR}` }}>
                     <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
                         <MetaField label="Invoice Number" value={meta.invoiceNo} onChange={v => sm("invoiceNo", v)} />
+                        <MetaField label="Billing Date" value={meta.billingDate} onChange={v => sm("billingDate", v)} />
                         <MetaField label="Invoice Date" value={meta.invoiceDate} onChange={v => sm("invoiceDate", v)} />
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0, border: `1.5px solid ${LINE}`, padding: "10px 16px", minWidth: 150 }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>Remaining Due</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, marginTop: 3, letterSpacing: "-0.01em" }}>Rs. {fmt(remaining)}</div>
                     </div>
                 </div>
 
-                {/* ── PARTY + VEHICLE ── */}
+                {/* ── CLIENT ── */}
                 <div style={{ padding: "16px 40px 0", display: "flex", gap: 14 }}>
-                    <div style={{ flex: 1.4, border: `1px solid ${LINE}`, padding: "10px 14px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${HAIR}` }}>Party / Outsider</div>
-                        <FieldLabel>Name</FieldLabel>
-                        <input type="text" value={meta.partyName} onChange={e => sm("partyName", e.target.value)} placeholder="Outsider name"
-                            style={{ ...valueInp, fontSize: 14, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }} />
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                            <div>
-                                <FieldLabel>Pickup</FieldLabel>
-                                <textarea value={meta.pickupFrom} onChange={e => sm("pickupFrom", e.target.value)} placeholder="Enter pickup…" rows={1}
-                                    style={{ ...valueInp, resize: "none", lineHeight: 1.45 }} />
+                    <div style={{ flex: 1, border: `1px solid ${LINE}`, padding: "16px 18px" }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${HAIR}` }}>Bill To</div>
+                        <div style={{ display: "flex", gap: 16 }}>
+                            <div style={{ flex: 1, position: "relative" }}>
+                                <FieldLabel>Client Name</FieldLabel>
+                                <input type="text" value={meta.clientName} onChange={e => handleNameChange(e.target.value)} onFocus={() => meta.clientName && setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 200)} placeholder="Client name"
+                                    style={{ ...valueInp, fontSize: 14, fontWeight: 700 }} />
+                                <AnimatePresence>
+                                    {showSugg && suggestions.length > 0 && (
+                                        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                            style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: `1px solid ${LINE}`, zIndex: 100, maxHeight: 150, overflowY: "auto" }} className="no-print">
+                                            {suggestions.map(c => (
+                                                <div key={c._id} onClick={() => selectSugg(c)} style={{ padding: "8px 12px", fontSize: 12, borderBottom: "1px solid #eee", cursor: "pointer", display: "flex", justifyContent: "space-between", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                                                    <span style={{ fontWeight: 700 }}>{c.outsiderName}</span>
+                                                    <span style={{ fontSize: 10, color: MUTED }}>{c.mobileNo}</span>
+                                                </div>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
-                            <div>
-                                <FieldLabel>Destination</FieldLabel>
-                                <textarea value={meta.deliverTo} onChange={e => sm("deliverTo", e.target.value)} placeholder="Enter destination…" rows={1}
-                                    style={{ ...valueInp, resize: "none", lineHeight: 1.45 }} />
+                            <div style={{ flex: 1 }}>
+                                <FieldLabel>Phone</FieldLabel>
+                                <input type="text" value={meta.clientPhone} onChange={e => sm("clientPhone", e.target.value)} placeholder="—" style={{ ...valueInp, fontSize: 14 }} />
+                            </div>
+                            <div style={{ flex: 1.5 }}>
+                                <FieldLabel>Address</FieldLabel>
+                                <input type="text" value={meta.clientAddress} onChange={e => sm("clientAddress", e.target.value)} placeholder="—" style={{ ...valueInp, fontSize: 14 }} />
                             </div>
                         </div>
-                    </div>
-                    <div style={{ flex: 1, border: `1px solid ${LINE}`, padding: "10px 14px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${HAIR}` }}>Vehicle Info</div>
-                        <FieldLabel>Vehicle No.</FieldLabel>
-                        <input type="text" value={meta.vehicleNo} onChange={e => sm("vehicleNo", e.target.value)} placeholder="Enter vehicle no."
-                            style={{ ...valueInp, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }} />
-                        <FieldLabel>Detail</FieldLabel>
-                        <input type="text" value={meta.vehicleDetail} onChange={e => sm("vehicleDetail", e.target.value)} placeholder="Enter detail"
-                            style={{ ...valueInp, fontWeight: 700, textTransform: "uppercase" }} />
                     </div>
                 </div>
 
@@ -95,14 +127,14 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                     <table style={{ width: "100%", borderCollapse: "collapse", border: `1.5px solid ${LINE}` }}>
                         <thead>
                             <tr style={{ height: 38, background: "#fff" }}>
-                                {["Sr", "Description", "Total"].map((h, i) => (
+                                {["Sr", "Description", "Vehicle", "Price", "Qty", "Total"].map((h, i) => (
                                     <th key={h} style={{
-                                        fontSize: 10, fontWeight: 800, color: INK, padding: "0 12px",
-                                        textAlign: i === 0 || i === 2 ? "center" : "left",
+                                        fontSize: 10, fontWeight: 800, color: INK, padding: "0 10px",
+                                        textAlign: (i === 0 || i >= 3) ? "center" : "left",
                                         textTransform: "uppercase", letterSpacing: "0.08em",
                                         borderBottom: `1.5px solid ${LINE}`,
-                                        borderRight: i < 2 ? `1px solid ${HAIR}` : "none",
-                                        width: ["52px", "auto", "140px"][i],
+                                        borderRight: i < 5 ? `1px solid ${HAIR}` : "none",
+                                        width: ["44px", "auto", "96px", "76px", "52px", "88px"][i],
                                         background: "#fff",
                                     }}>{h}</th>
                                 ))}
@@ -110,32 +142,25 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                         </thead>
                         <tbody>
                             <AnimatePresence mode="popLayout">
-                                {page.items.map((item, i) => (
-                                    <motion.tr layout key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 34, background: "#fff" }}>
+                                {page.items.map((it: any, idx: number) => (
+                                    <motion.tr layout key={it.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: 34, background: "#fff" }}>
                                         <td style={tdc}>
                                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                                                <span style={{ fontSize: 10, color: MUTED, fontWeight: 700 }}>{String(i + 1).padStart(2, "0")}</span>
-                                                <button onClick={() => delRow(page.id, item.id)} className="no-print" style={delRSt}>✕</button>
+                                                <span style={{ fontSize: 10, color: MUTED, fontWeight: 700 }}>{(idx + 1).toString().padStart(2, "0")}</span>
+                                                <button onClick={() => delRow(page.id, it.id)} className="no-print" style={delRSt}>✕</button>
                                             </div>
                                         </td>
-                                        <td style={tdl}>
-                                            <input type="text" value={item.cargoDetails} onChange={e => updItem(page.id, item.id, "cargoDetails", e.target.value)} onKeyDown={onEnter} placeholder="Enter details…"
-                                                style={inp} />
-                                        </td>
-                                        <td style={{ ...tdc, borderRight: "none" }}>
-                                            <input type="number" value={item.amount || ""} onChange={e => updItem(page.id, item.id, "amount", +e.target.value || 0)} onKeyDown={onEnter} placeholder="Amount"
-                                                style={{ ...inp, textAlign: "center", fontWeight: 700 }} />
-                                        </td>
+                                        <td style={tdl}><input style={inp} value={it.cargoDetails} onChange={e => updItem(page.id, it.id, "cargoDetails", e.target.value)} onKeyDown={onEnter} placeholder="Cargo description..." /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} value={it.vehicle} onChange={e => updItem(page.id, it.id, "vehicle", e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.rate || ""} onChange={e => updItem(page.id, it.id, "rate", +e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={tdc}><input style={{ ...inp, textAlign: "center" }} type="number" value={it.qty || ""} onChange={e => updItem(page.id, it.id, "qty", +e.target.value)} onKeyDown={onEnter} /></td>
+                                        <td style={{ ...tdc, borderRight: "none" }}><input style={{ ...inp, textAlign: "center", fontWeight: 700 }} type="number" value={it.amount || ""} onChange={e => updItem(page.id, it.id, "amount", +e.target.value)} onKeyDown={onEnter} /></td>
                                     </motion.tr>
                                 ))}
                             </AnimatePresence>
                         </tbody>
                     </table>
-                    {page.items.length < MAX_ROWS && (
-                        <button className="no-print" onClick={() => addRow(page.id)} style={addSt}>
-                            <Plus size={11} /> Add Row ({page.items.length}/{MAX_ROWS})
-                        </button>
-                    )}
+                    {page.items.length < MAX_ROWS && <button className="no-print" onClick={() => addRow(page.id)} style={addSt}><Plus size={11} /> Add Row ({page.items.length}/{MAX_ROWS})</button>}
                 </div>
 
                 {/* ── SUMMARY ── */}
@@ -144,14 +169,11 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                         <div style={{ width: 270, border: `1.5px solid ${LINE}` }}>
                             <SummaryRow label="Subtotal" value={`Rs. ${fmt(subtotal)}`} />
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 16px", borderBottom: `1px solid ${HAIR}`, fontSize: 11 }}>
-                                <span style={{ fontWeight: 700, color: MUTED }}>Advance Paid</span>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: INK }}>
-                                    - Rs. <input type="number" value={meta.advance || ""} onChange={e => sm("advance", +e.target.value || 0)} placeholder="0"
-                                        style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: INK, background: "transparent", border: "none", outline: "none", textAlign: "right", width: 70, cursor: "pointer" }} />
-                                </div>
+                                <span style={{ fontWeight: 700, color: MUTED }}>Discount</span>
+                                <div style={{ display: "flex", gap: 3, fontWeight: 700, color: INK }}>- Rs.<input type="number" value={meta.discount || ""} onChange={e => sm("discount", +e.target.value)} style={{ background: "transparent", border: "none", outline: "none", fontSize: 11, fontWeight: 700, textAlign: "right", width: 64, cursor: "pointer", color: INK, fontFamily: FONT }} /></div>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 16px", background: "#fff", borderTop: `1.5px solid ${LINE}` }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>Remaining</span>
+                                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>Grand Total</span>
                                 <span style={{ fontSize: 17, fontWeight: 800 }}>Rs. {fmt(remaining)}</span>
                             </div>
                         </div>
@@ -207,8 +229,8 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 const valueInp: React.CSSProperties = { fontFamily: FONT, fontSize: 11, fontWeight: 700, color: INK, background: "transparent", border: "none", outline: "none", width: "100%", cursor: "pointer", display: "block" };
 const delPSt: React.CSSProperties = { position: "absolute", top: -38, right: 0, zIndex: 50, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: INK, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer" };
-const tdl: React.CSSProperties = { fontSize: 10, color: INK, padding: "0 12px", borderBottom: `1px solid ${HAIR}`, borderRight: `1px solid ${HAIR}`, verticalAlign: "middle" };
+const tdl: React.CSSProperties = { fontSize: 10, color: INK, padding: "0 10px", borderBottom: `1px solid ${HAIR}`, borderRight: `1px solid ${HAIR}`, verticalAlign: "middle" };
 const tdc: React.CSSProperties = { ...tdl, textAlign: "center", position: "relative" };
-const inp: React.CSSProperties = { width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: FONT, fontSize: 11, fontWeight: 700, color: INK, cursor: "pointer" };
-const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "5px 12px", border: `1px dashed ${LINE}`, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: MUTED, fontFamily: FONT };
+const inp: React.CSSProperties = { width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: FONT, fontSize: 10, fontWeight: 700, color: INK, cursor: "pointer" };
+const addSt: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "5px 12px", border: `1px dashed ${LINE}`, background: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: MUTED };
 const delRSt: React.CSSProperties = { background: "#fff", border: `1px solid ${LINE}`, color: INK, cursor: "pointer", fontSize: 9, padding: "1px 5px", fontWeight: 700 };
