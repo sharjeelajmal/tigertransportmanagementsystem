@@ -19,21 +19,43 @@ interface Props {
 }
 
 export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROWS, updItem, delRow, addRow, sm, subtotal, remaining, delPage, pagesCount }: Props) {
-    const [allOutsiders, setAllOutsiders] = React.useState<any[]>([]);
+    const [allParties, setAllParties] = React.useState<any[]>([]);
     const [suggestions, setSuggestions] = React.useState<any[]>([]);
     const [showSugg, setShowSugg] = React.useState(false);
 
     React.useEffect(() => {
-        fetch("/api/outsiders").then(r => r.json()).then(data => {
-            if (data.success) setAllOutsiders(data.data);
+        Promise.all([
+            fetch("/api/customers").then(r => r.json()),
+            fetch("/api/outsiders").then(r => r.json())
+        ]).then(([custData, outData]) => {
+            const parties: any[] = [];
+            if (custData.success) {
+                custData.data.forEach((c: any) => parties.push({
+                    _id: c._id,
+                    name: c.customerName,
+                    mobileNo: c.mobileNo,
+                    address: c.address,
+                    type: 'Customer'
+                }));
+            }
+            if (outData.success) {
+                outData.data.forEach((o: any) => parties.push({
+                    _id: o._id,
+                    name: o.outsiderName,
+                    mobileNo: o.mobileNo,
+                    address: o.address,
+                    type: 'Outsider'
+                }));
+            }
+            setAllParties(parties);
         });
     }, []);
 
     const handleNameChange = (val: string) => {
         sm("clientName", val);
         if (val.length > 0) {
-            const filtered = allOutsiders.filter(c =>
-                c.outsiderName.toLowerCase().includes(val.toLowerCase())
+            const filtered = allParties.filter(p =>
+                p.name.toLowerCase().includes(val.toLowerCase())
             );
             setSuggestions(filtered);
             setShowSugg(true);
@@ -43,10 +65,10 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
         }
     };
 
-    const selectSugg = (c: any) => {
-        sm("clientName", c.outsiderName);
-        sm("clientPhone", c.mobileNo || "");
-        sm("clientAddress", c.address || "");
+    const selectSugg = (p: any) => {
+        sm("clientName", p.name);
+        sm("clientPhone", p.mobileNo || "");
+        sm("clientAddress", p.address || "");
         setShowSugg(false);
     };
 
@@ -100,10 +122,13 @@ export default function AllocationInvoice({ page, pageIdx, isLast, meta, MAX_ROW
                                     {showSugg && suggestions.length > 0 && (
                                         <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                                             style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: `1px solid ${LINE}`, zIndex: 100, maxHeight: 150, overflowY: "auto" }} className="no-print">
-                                            {suggestions.map(c => (
-                                                <div key={c._id} onClick={() => selectSugg(c)} style={{ padding: "8px 12px", fontSize: 12, borderBottom: "1px solid #eee", cursor: "pointer", display: "flex", justifyContent: "space-between", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
-                                                    <span style={{ fontWeight: 700 }}>{c.outsiderName}</span>
-                                                    <span style={{ fontSize: 10, color: MUTED }}>{c.mobileNo}</span>
+                                            {suggestions.map(p => (
+                                                <div key={p._id + p.type} onClick={() => selectSugg(p)} style={{ padding: "8px 12px", fontSize: 12, borderBottom: "1px solid #eee", cursor: "pointer", display: "flex", justifyContent: "space-between", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontWeight: 700 }}>{p.name}</span>
+                                                        <span style={{ fontSize: 9, padding: "2px 6px", background: p.type === 'Customer' ? "#e0f2fe" : "#fef08a", color: p.type === 'Customer' ? "#0369a1" : "#854d0e", borderRadius: 10 }}>{p.type}</span>
+                                                    </div>
+                                                    <span style={{ fontSize: 10, color: MUTED }}>{p.mobileNo}</span>
                                                 </div>
                                             ))}
                                         </motion.div>
