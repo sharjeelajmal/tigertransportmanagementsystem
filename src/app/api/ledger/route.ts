@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Payroll from '@/models/Payroll';
-import Expense from '@/models/Expense';
 import OutsiderAllocation from '@/models/OutsiderAllocation';
 import LedgerEntry from '@/models/LedgerEntry';
 
@@ -131,21 +130,16 @@ export async function GET(req: NextRequest) {
         // Activated when no partyName is provided
         // ════════════════════════════════════════════════════════════════════
 
-        const expenseDateFilter: any = {};
         const payrollDateFilter: any = {};
         const allocationDateFilter: any = {};
 
         if (startDate && endDate) {
-            // Expense uses string date (YYYY-MM-DD)
-            expenseDateFilter.date = { $gte: startDate, $lte: endDate };
             payrollDateFilter.paymentDate = { $gte: new Date(startDate), $lte: new Date(endDate + 'T23:59:59') };
             allocationDateFilter.allocationDate = { $gte: new Date(startDate), $lte: new Date(endDate + 'T23:59:59') };
         } else if (startDate) {
-            expenseDateFilter.date = { $gte: startDate };
             payrollDateFilter.paymentDate = { $gte: new Date(startDate) };
             allocationDateFilter.allocationDate = { $gte: new Date(startDate) };
         } else if (endDate) {
-            expenseDateFilter.date = { $lte: endDate };
             payrollDateFilter.paymentDate = { $lte: new Date(endDate + 'T23:59:59') };
             allocationDateFilter.allocationDate = { $lte: new Date(endDate + 'T23:59:59') };
         }
@@ -154,14 +148,13 @@ export async function GET(req: NextRequest) {
         const allocations = await OutsiderAllocation.find(allocationDateFilter).lean() as any[];
         const totalCashIn = allocations.reduce((sum: number, a: any) => sum + (a.paidAmount || 0), 0);
 
-        // Cash Out: Payroll + Expense
+        // Cash Out: Payroll
         const payrolls = await Payroll.find(payrollDateFilter)
             .populate('staffId', 'firstName lastName designation')
             .lean() as any[];
         const totalPayrollOut = payrolls.reduce((sum: number, p: any) => sum + (p.netSalary || 0), 0);
 
-        const expenses = await Expense.find(expenseDateFilter).lean() as any[];
-        const totalExpenseOut = expenses.reduce((sum: number, e: any) => sum + (e.paidAmount || 0), 0);
+        const totalExpenseOut = 0; // Removed as per request
 
         const totalCashOut = totalPayrollOut + totalExpenseOut;
         const netBalance = totalCashIn - totalCashOut;
@@ -169,15 +162,6 @@ export async function GET(req: NextRequest) {
         const totalPayables = allocations
             .filter((a: any) => a.paymentStatus !== 'Paid')
             .reduce((sum: number, a: any) => sum + ((a.totalAmount || 0) - (a.paidAmount || 0)), 0);
-
-        const recentExpenses = expenses.slice(-30).map((e: any) => ({
-            _id: e._id,
-            type: 'Expense',
-            description: `${e.category} — ${e.expenseType}`,
-            amount: e.paidAmount || e.totalAmount || 0,
-            date: e.date || e.createdAt,
-            status: e.status,
-        }));
 
         const recentPayrolls = payrolls.slice(-30).map((p: any) => ({
             _id: p._id,
@@ -197,7 +181,7 @@ export async function GET(req: NextRequest) {
             status: a.paymentStatus,
         }));
 
-        const transactions = [...recentExpenses, ...recentPayrolls, ...recentAllocations]
+        const transactions = [...recentPayrolls, ...recentAllocations]
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .slice(0, 30);
 

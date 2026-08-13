@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         const ledger = invoiceLedgerMeta(rawType);
         const resolvedPartyName: string = (
             rawType === 'allocation'
-                ? (invoice.partyName || body.partyName || '')
+                ? (invoice.partyName || body.partyName || invoice.clientName || body.clientName || '')
                 : (invoice.clientName || body.clientName || '')
         ).trim();
 

@@ -241,9 +241,6 @@ export default function LoginPage() {
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
                                             Password
                                         </label>
-                                        <a href="#" className="text-xs font-semibold transition-colors" style={{ color: "var(--primary)" }}>
-                                            Forgot?
-                                        </a>
                                     </div>
                                     <div className="relative">
                                         <input

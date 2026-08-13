@@ -37,7 +37,7 @@ export async function GET(_req: NextRequest) {
                 const invType: string = (inv.type || '').toLowerCase();
                 const ledger = invoiceLedgerMeta(invType);
                 const partyName: string = (
-                    invType === 'allocation' ? (inv.partyName || '') : (inv.clientName || '')
+                    invType === 'allocation' ? (inv.partyName || inv.clientName || '') : (inv.clientName || '')
                 ).trim();
 
                 if (!partyName) {

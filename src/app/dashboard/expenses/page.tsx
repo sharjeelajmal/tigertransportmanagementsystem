@@ -31,12 +31,7 @@ const categoryOptions = [
     { value: "Office Expense", label: "Office Expense" },
 ];
 
-const statusOptions = [
-    { value: "All", label: "All Statuses" },
-    { value: "Paid", label: "Paid" },
-    { value: "Unpaid", label: "Unpaid" },
-    { value: "Partial Paid", label: "Partial Paid" },
-];
+
 
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, { bg: string; color: string }> = {
@@ -75,7 +70,7 @@ export default function ExpensesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
-    const [status, setStatus] = useState("All");
+
     const [monthFilter, setMonthFilter] = useState(() => {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -115,13 +110,12 @@ export default function ExpensesPage() {
     const filtered = expenses.filter((e) => {
         const matchSearch = e.expenseType.toLowerCase().includes(search.toLowerCase()) || (e.vehicleNo || "").toLowerCase().includes(search.toLowerCase());
         const matchCat = category === "All" || e.category === category;
-        const matchStatus = status === "All" || e.status === status;
-        return matchSearch && matchCat && matchStatus;
+        return matchSearch && matchCat;
     });
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, category, status, monthFilter]);
+    }, [search, category, monthFilter]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const paginatedData = filtered.slice(
@@ -141,7 +135,7 @@ export default function ExpensesPage() {
         { label: "Highest Category", value: highestCat, icon: TrendingUp },
     ];
 
-    const activeFilters = category !== "All" || status !== "All";
+    const activeFilters = category !== "All";
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto">
@@ -206,7 +200,6 @@ export default function ExpensesPage() {
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
                             <div className="px-4 md:px-6 py-4 bg-gray-50 border-b border-gray-100 flex flex-wrap items-end gap-3">
                                 <CustomDropdown label="Category" options={categoryOptions} value={category} onChange={setCategory} className="w-full sm:w-48" />
-                                <CustomDropdown label="Status" options={statusOptions} value={status} onChange={setStatus} className="w-full sm:w-44" />
                                 <div className="w-full sm:w-48">
                                     <CustomMonthPicker
                                         label="Filter by Month"
@@ -214,7 +207,7 @@ export default function ExpensesPage() {
                                         onChange={setMonthFilter}
                                     />
                                 </div>
-                                {activeFilters && (<button onClick={() => { setCategory("All"); setStatus("All"); const d = new Date(); setMonthFilter(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }} className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer pb-2"><X size={12} /> Clear all</button>)}
+                                {activeFilters && (<button onClick={() => { setCategory("All"); const d = new Date(); setMonthFilter(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }} className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer pb-2"><X size={12} /> Clear all</button>)}
                             </div>
                         </motion.div>
                     )}
