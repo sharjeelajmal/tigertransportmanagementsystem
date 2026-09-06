@@ -9,6 +9,8 @@ interface CustomDatePickerProps {
     onChange: (date: Date) => void;
     label?: string;
     required?: boolean;
+    align?: 'left' | 'right';
+    className?: string;
 }
 
 type ViewMode = 'days' | 'months' | 'years';
@@ -23,7 +25,7 @@ function parseLocalDate(v: string | Date): Date {
     return new Date(v);
 }
 
-export default function CustomDatePicker({ value, onChange, label, required }: CustomDatePickerProps) {
+export default function CustomDatePicker({ value, onChange, label, required, align = 'left', className = '' }: CustomDatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [viewDate, setViewDate] = useState(value ? parseLocalDate(value) : new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('days');
@@ -207,7 +209,7 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
     };
 
     return (
-        <div ref={containerRef} className="relative w-full">
+        <div ref={containerRef} className={`relative w-full ${className}`} style={{ zIndex: isOpen ? 9999 : undefined }}>
             {label && (
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     {label}
@@ -235,7 +237,13 @@ export default function CustomDatePicker({ value, onChange, label, required }: C
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute z-50 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-72 left-0 sm:left-auto"
+                        className={`absolute mt-2 bg-white rounded-2xl border border-gray-100 p-4 w-72 ${
+                            align === 'right' ? 'right-0' : 'left-0'
+                        }`}
+                        style={{
+                            zIndex: 9999,
+                            boxShadow: "0 20px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08)",
+                        }}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between mb-4">

@@ -28,16 +28,31 @@ export async function GET(request: NextRequest) {
             query.type = type.toLowerCase();
         }
 
+        let invoices = await Invoice.find(query).lean() as any[];
+
         if (startDate && endDate) {
-            query.createdAt = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate + 'T23:59:59'),
-            };
+            const startD = new Date(`${startDate}T00:00:00`);
+            const endD = new Date(`${endDate}T23:59:59`);
+            invoices = invoices.filter(inv => {
+                const d = parseLedgerDate(inv.billingDate || inv.invoiceDate || inv.createdAt);
+                const createdD = inv.createdAt ? new Date(inv.createdAt) : null;
+                return (d >= startD && d <= endD) || (createdD && createdD >= startD && createdD <= endD);
+            });
         } else if (specificDate) {
-            query.invoiceDate = specificDate;
+            invoices = invoices.filter(inv => {
+                return inv.invoiceDate === specificDate || inv.billingDate === specificDate;
+            });
         }
 
-        const invoices = await Invoice.find(query).sort({ createdAt: -1 }).lean();
+        const sortOrder = searchParams.get('sort') || 'desc';
+        invoices.sort((a, b) => {
+            const dateA = parseLedgerDate(a.billingDate || a.invoiceDate || a.createdAt).getTime();
+            const dateB = parseLedgerDate(b.billingDate || b.invoiceDate || b.createdAt).getTime();
+            if (sortOrder === 'asc') {
+                return dateA - dateB || String(a.invoiceNo || '').localeCompare(String(b.invoiceNo || ''));
+            }
+            return dateB - dateA || String(b.invoiceNo || '').localeCompare(String(a.invoiceNo || ''));
+        });
 
         return NextResponse.json({ success: true, data: invoices });
     } catch (error) {

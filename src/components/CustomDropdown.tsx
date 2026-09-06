@@ -57,7 +57,11 @@ export default function CustomDropdown({
     }, [options, searchable, searchTerm]);
 
     return (
-        <div className={`relative ${className}`} ref={ref}>
+        <div
+            className={`relative ${className}`}
+            ref={ref}
+            style={{ zIndex: isOpen ? 9999 : undefined }}
+        >
             {label && (
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     {label}
@@ -98,9 +102,10 @@ export default function CustomDropdown({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.97 }}
                         transition={{ duration: 0.18, ease: "easeOut" }}
-                        className="absolute z-50 w-full mt-1.5 bg-white rounded-2xl border border-gray-100 overflow-hidden"
+                        className="absolute w-full mt-1.5 bg-white rounded-2xl border border-gray-100 overflow-hidden"
                         style={{
-                            boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.06)",
+                            zIndex: 9999,
+                            boxShadow: "0 20px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(var(--primary-rgb, 181,1,4),0.06)",
                         }}
                     >
                         <div className="p-1.5 flex flex-col max-h-64">

@@ -53,7 +53,7 @@ export default function CustomersPage() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Report state
-    const [reportCustomer, setReportCustomer] = useState<{ id: string; name: string } | null>(null);
+    const [reportCustomer, setReportCustomer] = useState<{ id: string; name: string; code?: string } | null>(null);
 
     useEffect(() => {
         fetchCustomers();
@@ -381,7 +381,7 @@ export default function CustomersPage() {
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setReportCustomer({ id: c._id, name: c.customerName })}
+                                                    onClick={() => setReportCustomer({ id: c._id, name: c.customerName, code: (filtered.indexOf(c) + 1).toString() })}
                                                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-bold cursor-pointer shadow-md"
                                                 >
                                                     <TrendingUp size={13} />
@@ -470,7 +470,7 @@ export default function CustomersPage() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => setReportCustomer({ id: c._id, name: c.customerName })}
+                                            onClick={() => setReportCustomer({ id: c._id, name: c.customerName, code: (filtered.indexOf(c) + 1).toString() })}
                                             className="flex-1 min-w-[100px] px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             <TrendingUp size={13} />
@@ -536,6 +536,8 @@ export default function CustomersPage() {
             <ReportModal
                 isOpen={!!reportCustomer}
                 customerName={reportCustomer?.name || ""}
+                customerId={reportCustomer?.id}
+                customerCode={reportCustomer?.code}
                 onClose={() => setReportCustomer(null)}
             />
         </div>

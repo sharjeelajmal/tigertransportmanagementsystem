@@ -9,11 +9,21 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const month = searchParams.get("month");
+        const startDate = searchParams.get("startDate") || searchParams.get("from");
+        const endDate = searchParams.get("endDate") || searchParams.get("to");
+        const specificDate = searchParams.get("date") || searchParams.get("specificDate");
 
-        let filterQuery = {};
-        if (month) {
-            // Regex to match dates starting with "YYYY-MM"
-            filterQuery = { date: { $regex: `^${month}` } };
+        let filterQuery: any = {};
+        if (specificDate) {
+            filterQuery.date = specificDate;
+        } else if (startDate && endDate) {
+            filterQuery.date = { $gte: startDate, $lte: endDate };
+        } else if (startDate) {
+            filterQuery.date = { $gte: startDate };
+        } else if (endDate) {
+            filterQuery.date = { $lte: endDate };
+        } else if (month) {
+            filterQuery.date = { $regex: `^${month}` };
         }
 
         const expenses = await Expense.find(filterQuery).sort({ date: -1, createdAt: -1 }).lean();

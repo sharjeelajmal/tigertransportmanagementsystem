@@ -5,14 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
     Receipt, TrendingUp, Building2, Truck,
-    Search, SlidersHorizontal, Plus, X, Eye, Trash2,
+    Search, SlidersHorizontal, Plus, X, Eye, Trash2, FileSpreadsheet,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import Loader from "@/components/Loader";
 import DeleteModal from "@/components/DeleteModal";
 import Pagination from "@/components/Pagination";
-import CustomMonthPicker from "@/components/CustomMonthPicker";
+import ExpenseLedgerModal from "@/components/expenses/ExpenseLedgerModal";
 import { useAuth } from "@/context/AuthContext";
 
 interface Expense {
@@ -56,6 +56,13 @@ function CatBadge({ category }: { category: string }) {
     );
 }
 
+function toDateStr(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+}
+
 function formatDate(d: string) {
     if (!d) return "—";
     const parts = d.split("-");
@@ -70,23 +77,23 @@ export default function ExpensesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [specificDate, setSpecificDate] = useState("");
 
-    const [monthFilter, setMonthFilter] = useState(() => {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    });
     const [showFilters, setShowFilters] = useState(false);
+    const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    useEffect(() => { fetchExpenses(); }, [monthFilter]);
+    useEffect(() => { fetchExpenses(); }, []);
 
     const fetchExpenses = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/expenses?month=${monthFilter}`);
+            const res = await fetch(`/api/expenses`);
             const data = await res.json();
             if (data.success) setExpenses(data.data);
         } catch { console.error("Failed to fetch expenses"); }
@@ -110,12 +117,24 @@ export default function ExpensesPage() {
     const filtered = expenses.filter((e) => {
         const matchSearch = e.expenseType.toLowerCase().includes(search.toLowerCase()) || (e.vehicleNo || "").toLowerCase().includes(search.toLowerCase());
         const matchCat = category === "All" || e.category === category;
-        return matchSearch && matchCat;
+
+        let matchDate = true;
+        if (specificDate) {
+            matchDate = e.date === specificDate;
+        } else if (startDate && endDate) {
+            matchDate = e.date >= startDate && e.date <= endDate;
+        } else if (startDate) {
+            matchDate = e.date >= startDate;
+        } else if (endDate) {
+            matchDate = e.date <= endDate;
+        }
+
+        return matchSearch && matchCat && matchDate;
     });
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, category, monthFilter]);
+    }, [search, category, startDate, endDate, specificDate]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const paginatedData = filtered.slice(
@@ -135,27 +154,38 @@ export default function ExpensesPage() {
         { label: "Highest Category", value: highestCat, icon: TrendingUp },
     ];
 
-    const activeFilters = category !== "All";
+    const activeFilters = category !== "All" || Boolean(startDate) || Boolean(endDate) || Boolean(specificDate);
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto">
             {/* Header */}
-            <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between gap-3">
+            <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
                 <div className="min-w-0">
                     <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight truncate">Expenses</h1>
                     <p className="text-gray-400 text-xs md:text-sm mt-0.5">{expenses.length} records &bull; Track all company expenses</p>
                 </div>
-                <motion.button
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => router.push("/dashboard/expenses/add")}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
-                >
-                    <Plus size={15} />
-                    <span className="hidden sm:inline">Add Expense</span>
-                    <span className="sm:hidden">Add</span>
-                </motion.button>
+                <div className="flex items-center gap-2.5 flex-shrink-0">
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setIsLedgerModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-gray-700 text-xs sm:text-sm font-bold shadow-sm hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer"
+                    >
+                        <FileSpreadsheet size={15} />
+                        <span>Ledger Sheet</span>
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(var(--primary-rgb, 181,1,4),0.35)" }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/dashboard/expenses/add")}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg cursor-pointer"
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))" }}
+                    >
+                        <Plus size={15} />
+                        <span className="hidden sm:inline">Add Expense</span>
+                        <span className="sm:hidden">Add</span>
+                    </motion.button>
+                </div>
             </motion.div>
 
             {/* Stats Cards */}
@@ -177,9 +207,9 @@ export default function ExpensesPage() {
             </div>
 
             {/* Table Card */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="bg-white rounded-2xl border border-gray-100 overflow-hidden" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.06)" }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="bg-white rounded-2xl border border-gray-100 relative" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.06)" }}>
                 {/* Toolbar */}
-                <div className="px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-100">
+                <div className="px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-100 relative z-20">
                     <div className="relative flex-1 min-w-0" style={{ minWidth: "140px" }}>
                         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input type="text" placeholder="Search expense or vehicle..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 outline-none transition-all" style={{ borderColor: search ? "var(--primary)" : "", boxShadow: search ? "0 0 0 3px rgba(var(--primary-rgb, 181,1,4),0.08)" : "" }} />
@@ -197,24 +227,118 @@ export default function ExpensesPage() {
                 {/* Filter Panel */}
                 <AnimatePresence>
                     {showFilters && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                            <div className="px-4 md:px-6 py-4 bg-gray-50 border-b border-gray-100 flex flex-wrap items-end gap-3">
-                                <CustomDropdown label="Category" options={categoryOptions} value={category} onChange={setCategory} className="w-full sm:w-48" />
-                                <div className="w-full sm:w-48">
-                                    <CustomMonthPicker
-                                        label="Filter by Month"
-                                        value={monthFilter}
-                                        onChange={setMonthFilter}
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="relative z-30"
+                        >
+                            <div className="px-4 md:px-6 py-4 bg-gray-50 border-b border-gray-100 space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                                    <CustomDropdown
+                                        label="Category"
+                                        options={categoryOptions}
+                                        value={category}
+                                        onChange={setCategory}
+                                        className="w-full"
                                     />
+                                    <div className="w-full">
+                                        <CustomDatePicker
+                                            label="From Date"
+                                            value={startDate}
+                                            onChange={(d) => {
+                                                setStartDate(toDateStr(d));
+                                                setSpecificDate("");
+                                            }}
+                                            align="left"
+                                        />
+                                    </div>
+                                    <div className="w-full">
+                                        <CustomDatePicker
+                                            label="To Date"
+                                            value={endDate}
+                                            onChange={(d) => {
+                                                setEndDate(toDateStr(d));
+                                                setSpecificDate("");
+                                            }}
+                                            align="right"
+                                        />
+                                    </div>
+                                    <div className="w-full">
+                                        <CustomDatePicker
+                                            label="Specific Date"
+                                            value={specificDate}
+                                            onChange={(d) => {
+                                                setSpecificDate(toDateStr(d));
+                                                setStartDate("");
+                                                setEndDate("");
+                                            }}
+                                            align="right"
+                                        />
+                                    </div>
                                 </div>
-                                {activeFilters && (<button onClick={() => { setCategory("All"); const d = new Date(); setMonthFilter(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }} className="flex items-center gap-1 text-xs font-semibold hover:underline mb-1 cursor-pointer pb-2"><X size={12} /> Clear all</button>)}
+
+                                {activeFilters && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-200/70">
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                            <span className="font-semibold text-gray-600">Active Filters:</span>
+                                            {category !== "All" && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium text-xs">
+                                                    Category: <strong className="text-gray-900">{category}</strong>
+                                                    <button type="button" onClick={() => setCategory("All")} className="text-gray-400 hover:text-red-500 cursor-pointer">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {(startDate || endDate) && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium text-xs">
+                                                    Range: <strong className="text-gray-900">{startDate ? formatDate(startDate) : "Start"} &rarr; {endDate ? formatDate(endDate) : "End"}</strong>
+                                                    <button type="button" onClick={() => { setStartDate(""); setEndDate(""); }} className="text-gray-400 hover:text-red-500 cursor-pointer">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {specificDate && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium text-xs">
+                                                    Date: <strong className="text-gray-900">{formatDate(specificDate)}</strong>
+                                                    <button type="button" onClick={() => setSpecificDate("")} className="text-gray-400 hover:text-red-500 cursor-pointer">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3 ml-auto">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsLedgerModalOpen(true)}
+                                                className="flex items-center gap-1.5 text-xs font-bold text-gray-700 hover:text-[var(--primary)] transition-colors cursor-pointer"
+                                            >
+                                                <FileSpreadsheet size={13} className="text-[var(--primary)]" />
+                                                Sheet for these dates
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setCategory("All");
+                                                    setStartDate("");
+                                                    setEndDate("");
+                                                    setSpecificDate("");
+                                                }}
+                                                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-red-500 hover:underline cursor-pointer"
+                                            >
+                                                <X size={13} /> Clear filters
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto relative z-10">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-gray-100">
@@ -264,7 +388,7 @@ export default function ExpensesPage() {
                 </div>
 
                 {/* Mobile Cards */}
-                <div className="md:hidden">
+                <div className="md:hidden relative z-10">
                     {isLoading ? (
                         <div className="flex flex-col items-center gap-3 py-16"><Loader size="md" /><p className="text-gray-400 text-sm">Loading...</p></div>
                     ) : filtered.length === 0 ? (
@@ -330,6 +454,16 @@ export default function ExpensesPage() {
                 onClose={() => setDeleteId(null)}
                 onConfirm={handleDelete}
                 isDeleting={isDeleting}
+            />
+
+            {/* Expense Ledger Modal */}
+            <ExpenseLedgerModal
+                isOpen={isLedgerModalOpen}
+                onClose={() => setIsLedgerModalOpen(false)}
+                initialStartDate={startDate}
+                initialEndDate={endDate}
+                initialSpecificDate={specificDate}
+                initialCategory={category}
             />
         </div>
     );
