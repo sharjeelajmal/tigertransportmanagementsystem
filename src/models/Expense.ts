@@ -2,7 +2,7 @@ import mongoose, { Schema, models } from 'mongoose';
 
 export interface IExpense {
     date: string;
-    category: 'Vehicle Expense' | 'Office Expense';
+    category: string;
     expenseType: string;
     // Vehicle Expense fields
     vehicleNo?: string;
@@ -24,7 +24,7 @@ export interface IExpense {
 const ExpenseSchema = new Schema<IExpense>(
     {
         date: { type: String, required: true },
-        category: { type: String, required: true, enum: ['Vehicle Expense', 'Office Expense'] },
+        category: { type: String, required: true, trim: true },
         expenseType: { type: String, required: true, trim: true },
         vehicleNo: { type: String, trim: true },
         driverName: { type: String, trim: true },

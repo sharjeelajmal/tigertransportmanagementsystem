@@ -1,35 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Receipt, Save } from "lucide-react";
+import { ArrowLeft, Save, Plus, Settings2 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import Loader from "@/components/Loader";
-
-const categoryOptions = [
-    { value: "Vehicle Expense", label: "Vehicle Expense" },
-    { value: "Office Expense", label: "Office Expense" },
-];
-
-const vehicleExpenseTypes = [
-    { value: "Fuel", label: "Fuel" },
-    { value: "Tire Change", label: "Tire Change" },
-    { value: "Maintenance", label: "Maintenance" },
-    { value: "Repair", label: "Repair" },
-    { value: "Washing", label: "Washing" },
-    { value: "Other", label: "Other" },
-];
-
-const officeExpenseTypes = [
-    { value: "Electricity Bill", label: "Electricity Bill" },
-    { value: "Water Bill", label: "Water Bill" },
-    { value: "Rent", label: "Rent" },
-    { value: "Stationery", label: "Stationery" },
-    { value: "Internet", label: "Internet" },
-    { value: "Other", label: "Other" },
-];
+import ManageCategoriesModal, { CategoryItem } from "@/components/expenses/ManageCategoriesModal";
+import ManageExpenseTypesModal from "@/components/expenses/ManageExpenseTypesModal";
 
 const paymentMethodOptions = [
     { value: "Cash", label: "Cash" },
@@ -44,18 +23,21 @@ const statusOptions = [
     { value: "Partial Paid", label: "Partial Paid" },
 ];
 
-type Category = "Vehicle Expense" | "Office Expense";
-
 const inputCls =
     "w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all focus:border-[var(--primary)] focus:shadow-[0_0_0_4px_rgba(var(--primary-rgb, 181,1,4),0.07)]";
 
 export default function AddExpensePage() {
     const router = useRouter();
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-    const [category, setCategory] = useState<Category>("Vehicle Expense");
+    const [categories, setCategories] = useState<CategoryItem[]>([]);
+    const [category, setCategory] = useState<string>("Vehicle Expense");
     const [date, setDateVal] = useState("");
     const [expenseType, setExpenseType] = useState("");
+
+    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
 
     // Vehicle fields
     const [vehicleNo, setVehicleNo] = useState("");
@@ -63,7 +45,7 @@ export default function AddExpensePage() {
     const [helperName, setHelperName] = useState("");
     const [route, setRoute] = useState("");
 
-    // Office fields
+    // Office / General fields
     const [amountGivenTo, setAmountGivenTo] = useState("");
 
     // Shared
@@ -76,9 +58,37 @@ export default function AddExpensePage() {
     const [paymentMethod, setPaymentMethod] = useState("");
     const [status, setStatus] = useState<"Paid" | "Unpaid" | "Partial Paid">("Unpaid");
 
+    const fetchCategories = async (selectName?: string) => {
+        try {
+            const res = await fetch("/api/expenses/categories");
+            const data = await res.json();
+            if (data.success && Array.isArray(data.data)) {
+                setCategories(data.data);
+                if (selectName) {
+                    setCategory(selectName);
+                    setExpenseType("");
+                } else if (data.data.length > 0) {
+                    const exists = data.data.some((c: CategoryItem) => c.name === category);
+                    if (!exists) {
+                        setCategory(data.data[0].name);
+                        setExpenseType("");
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load categories:", error);
+        } finally {
+            setIsLoadingCategories(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
     const handleCategoryChange = (val: string) => {
-        setCategory(val as Category);
-        setExpenseType(""); // reset type on change
+        setCategory(val);
+        setExpenseType("");
     };
 
     const handleTotalChange = (val: string) => {
@@ -97,8 +107,8 @@ export default function AddExpensePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!date || !expenseType || !totalAmount) {
-            alert("Date, Expense Type aur Total Amount zaroor fill karein");
+        if (!date || !category || !expenseType || !totalAmount) {
+            alert("Date, Category, Expense Type aur Total Amount zaroor fill karein");
             return;
         }
         setIsSaving(true);
@@ -141,7 +151,18 @@ export default function AddExpensePage() {
         }
     };
 
-    const expenseTypes = category === "Vehicle Expense" ? vehicleExpenseTypes : officeExpenseTypes;
+    const categoryOptions = categories.map((c) => ({
+        value: c.name,
+        label: c.name,
+    }));
+
+    const currentCatObj = categories.find((c) => c.name === category);
+    const expenseTypeOptions = (currentCatObj?.subtypes || []).map((t) => ({
+        value: t,
+        label: t,
+    }));
+
+    const isVehicleExpense = category === "Vehicle Expense";
 
     return (
         <div className="max-w-4xl mx-auto pb-10 space-y-0">
@@ -178,12 +199,27 @@ export default function AddExpensePage() {
                     {/* ── Section 1: Expense Category ── */}
                     <FormSection label="Expense Category" index={0}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <CustomDropdown
-                                label="Expense Category"
-                                options={categoryOptions}
-                                value={category}
-                                onChange={handleCategoryChange}
-                            />
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Expense Category
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCategoryModalOpen(true)}
+                                        className="text-xs font-bold text-[var(--primary)] hover:underline flex items-center gap-1 cursor-pointer transition-all"
+                                    >
+                                        <Settings2 size={13} />
+                                        <span>Manage / Add</span>
+                                    </button>
+                                </div>
+                                <CustomDropdown
+                                    options={categoryOptions}
+                                    value={category}
+                                    onChange={handleCategoryChange}
+                                    isLoading={isLoadingCategories}
+                                />
+                            </div>
                             <div>
                                 <CustomDatePicker
                                     label="Date"
@@ -201,51 +237,97 @@ export default function AddExpensePage() {
                     </FormSection>
 
                     {/* ── Section 2: Vehicle & Route Details (Vehicle Expense only) ── */}
-                    {category === "Vehicle Expense" && (
+                    {isVehicleExpense && (
                         <FormSection label="Vehicle & Route Details" index={1}>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Field label="Vehicle No.">
-                                    <input className={inputCls} placeholder="e.g. ABC-123" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} />
+                                    <input
+                                        className={inputCls}
+                                        placeholder="e.g. ABC-123"
+                                        value={vehicleNo}
+                                        onChange={(e) => setVehicleNo(e.target.value)}
+                                    />
                                 </Field>
                                 <Field label="Driver Name">
-                                    <input className={inputCls} placeholder="Driver name" value={driverName} onChange={e => setDriverName(e.target.value)} />
+                                    <input
+                                        className={inputCls}
+                                        placeholder="Driver name"
+                                        value={driverName}
+                                        onChange={(e) => setDriverName(e.target.value)}
+                                    />
                                 </Field>
                                 <Field label="Helper Name">
-                                    <input className={inputCls} placeholder="Helper name" value={helperName} onChange={e => setHelperName(e.target.value)} />
+                                    <input
+                                        className={inputCls}
+                                        placeholder="Helper name"
+                                        value={helperName}
+                                        onChange={(e) => setHelperName(e.target.value)}
+                                    />
                                 </Field>
                             </div>
                             <div className="mt-4">
                                 <Field label="Route">
-                                    <input className={inputCls} placeholder="Route details" value={route} onChange={e => setRoute(e.target.value)} />
+                                    <input
+                                        className={inputCls}
+                                        placeholder="Route details"
+                                        value={route}
+                                        onChange={(e) => setRoute(e.target.value)}
+                                    />
                                 </Field>
                             </div>
                         </FormSection>
                     )}
 
                     {/* ── Section 3: Expense Details ── */}
-                    <FormSection label="Expense Details" index={category === "Vehicle Expense" ? 2 : 1}>
+                    <FormSection label="Expense Details" index={isVehicleExpense ? 2 : 1}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <CustomDropdown
-                                label="Expense"
-                                options={expenseTypes}
-                                value={expenseType}
-                                onChange={setExpenseType}
-                            />
-                            {category === "Office Expense" && (
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Expense Type *
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsTypeModalOpen(true)}
+                                        className="text-xs font-bold text-[var(--primary)] hover:underline flex items-center gap-1 cursor-pointer transition-all"
+                                    >
+                                        <Plus size={13} />
+                                        <span>Manage / Add Types</span>
+                                    </button>
+                                </div>
+                                <CustomDropdown
+                                    options={expenseTypeOptions}
+                                    value={expenseType}
+                                    onChange={setExpenseType}
+                                    placeholder="Select expense type"
+                                />
+                            </div>
+
+                            {!isVehicleExpense && (
                                 <Field label="Amount Given To">
-                                    <input className={inputCls} placeholder="Person/vendor name" value={amountGivenTo} onChange={e => setAmountGivenTo(e.target.value)} />
+                                    <input
+                                        className={inputCls}
+                                        placeholder="Person or vendor name"
+                                        value={amountGivenTo}
+                                        onChange={(e) => setAmountGivenTo(e.target.value)}
+                                    />
                                 </Field>
                             )}
                         </div>
                         <div className="mt-4">
                             <Field label="Remarks">
-                                <input className={inputCls} placeholder="Optional remarks" value={remarks} onChange={e => setRemarks(e.target.value)} />
+                                <input
+                                    className={inputCls}
+                                    placeholder="Optional remarks"
+                                    value={remarks}
+                                    onChange={(e) => setRemarks(e.target.value)}
+                                />
                             </Field>
                         </div>
                     </FormSection>
 
                     {/* ── Section 4: Payment ── */}
-                    <FormSection label="Payment" index={category === "Vehicle Expense" ? 3 : 2} isLast>
+                    <FormSection label="Payment" index={isVehicleExpense ? 3 : 2} isLast>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <Field label="Total Amount *">
                                 <input
@@ -253,7 +335,7 @@ export default function AddExpensePage() {
                                     className={inputCls}
                                     placeholder="0"
                                     value={totalAmount}
-                                    onChange={e => handleTotalChange(e.target.value)}
+                                    onChange={(e) => handleTotalChange(e.target.value)}
                                     required
                                 />
                             </Field>
@@ -263,7 +345,7 @@ export default function AddExpensePage() {
                                     className={inputCls}
                                     placeholder="0"
                                     value={paidAmount}
-                                    onChange={e => handlePaidChange(e.target.value)}
+                                    onChange={(e) => handlePaidChange(e.target.value)}
                                 />
                             </Field>
                             <Field label="Remaining Amount">
@@ -283,12 +365,14 @@ export default function AddExpensePage() {
                                 options={paymentMethodOptions}
                                 value={paymentMethod}
                                 onChange={setPaymentMethod}
+                                direction="up"
                             />
                             <CustomDropdown
                                 label="Status"
                                 options={statusOptions}
                                 value={status}
                                 onChange={(v) => setStatus(v as any)}
+                                direction="up"
                             />
                         </div>
                     </FormSection>
@@ -317,11 +401,33 @@ export default function AddExpensePage() {
                     </motion.button>
                 </motion.div>
             </form>
+
+            {/* Modals */}
+            <ManageCategoriesModal
+                isOpen={isCategoryModalOpen}
+                onClose={() => setIsCategoryModalOpen(false)}
+                categories={categories}
+                onCategoriesChanged={async (newlyCreated) => {
+                    await fetchCategories(newlyCreated);
+                }}
+            />
+
+            <ManageExpenseTypesModal
+                isOpen={isTypeModalOpen}
+                onClose={() => setIsTypeModalOpen(false)}
+                activeCategoryName={category}
+                categories={categories}
+                onTypesChanged={async (newlyCreated) => {
+                    await fetchCategories();
+                    if (newlyCreated) {
+                        setExpenseType(newlyCreated);
+                    }
+                }}
+            />
         </div>
     );
 }
 
-// ── Helper components ──
 function FormSection({
     label, children, index, isLast,
 }: { label: string; children: React.ReactNode; index: number; isLast?: boolean }) {
@@ -332,11 +438,9 @@ function FormSection({
             transition={{ delay: 0.1 + index * 0.06 }}
             className={`grid grid-cols-1 sm:grid-cols-[170px_1fr] ${!isLast ? "border-b border-gray-100" : ""}`}
         >
-            {/* Label */}
             <div className="px-5 py-5 sm:py-6 border-b sm:border-b-0 sm:border-r border-gray-100 flex items-start">
                 <span className="text-sm font-bold text-gray-700 leading-tight">{label}</span>
             </div>
-            {/* Content */}
             <div className="px-5 py-5 sm:py-6">{children}</div>
         </motion.div>
     );

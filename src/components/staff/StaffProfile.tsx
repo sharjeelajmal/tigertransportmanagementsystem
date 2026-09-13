@@ -50,9 +50,21 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
         }
     };
 
+    const [designationOptions, setDesignationOptions] = useState<string[]>([
+        'Operation Manager', 'Transport Manager', 'Warehouse Supervisor', 'Labor', 'Driver', 'Admin', 'Office Staff'
+    ]);
+
     useEffect(() => {
         fetchStaff();
         fetchAttendance();
+        fetch('/api/designations')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.data)) {
+                    setDesignationOptions(data.data.map((d: any) => d.name));
+                }
+            })
+            .catch(console.error);
     }, [staffId]);
 
     const handleEdit = (section: string) => {
@@ -74,8 +86,9 @@ const StaffProfile = ({ staffId }: StaffProfileProps) => {
                 { name: 'address', label: 'Current Address', value: staff?.address },
             ];
         } else if (section === 'Employment Details') {
+            const allOpts = Array.from(new Set([...designationOptions, staff?.designation].filter(Boolean)));
             fields = [
-                { name: 'designation', label: 'Designation', type: 'select', options: ['Operation Manager', 'Transport Manager', 'Warehouse Supervisor', 'Labor', 'Driver', 'Admin'], value: staff?.designation },
+                { name: 'designation', label: 'Designation', type: 'select', options: allOpts, value: staff?.designation },
                 { name: 'status', label: 'Status', type: 'select', options: ['On Duty', 'Off Duty'], value: staff?.status },
             ];
         } else if (section === 'Payroll Structure') {

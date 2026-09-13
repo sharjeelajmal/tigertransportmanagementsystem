@@ -13,18 +13,11 @@ import {
     ArrowLeft,
     Save,
     X,
+    Settings2,
 } from "lucide-react";
+import { useEffect } from "react";
 import CustomDropdown from "@/components/CustomDropdown";
-
-const designationOptions = [
-    { value: "Operation Manager", label: "Operation Manager" },
-    { value: "Transport Manager", label: "Transport Manager" },
-    { value: "Warehouse Supervisor", label: "Warehouse Supervisor" },
-    { value: "Labor", label: "Labor" },
-    { value: "Driver", label: "Driver" },
-    { value: "Admin", label: "Admin" },
-    { value: "Office Staff", label: "Office Staff" },
-];
+import ManageDesignationsModal, { DesignationItem } from "@/components/staff/ManageDesignationsModal";
 
 const statusOptions = [
     { value: "On Duty", label: "On Duty" },
@@ -59,6 +52,9 @@ export default function AddStaffPage() {
     const router = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [designations, setDesignations] = useState<DesignationItem[]>([]);
+    const [isLoadingDesignations, setIsLoadingDesignations] = useState(true);
+    const [isDesignationModalOpen, setIsDesignationModalOpen] = useState(false);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [form, setForm] = useState<FormData>({
         firstName: "",
@@ -74,6 +70,27 @@ export default function AddStaffPage() {
         basicSalary: "",
         photo: "",
     });
+
+    const fetchDesignations = async (selectName?: string) => {
+        try {
+            const res = await fetch("/api/designations");
+            const data = await res.json();
+            if (data.success && Array.isArray(data.data)) {
+                setDesignations(data.data);
+                if (selectName) {
+                    setForm((prev) => ({ ...prev, designation: selectName }));
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load designations:", error);
+        } finally {
+            setIsLoadingDesignations(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDesignations();
+    }, []);
 
     const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -290,14 +307,28 @@ export default function AddStaffPage() {
                     </div>
 
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <CustomDropdown
-                            label="Designation"
-                            required
-                            options={designationOptions}
-                            value={form.designation}
-                            onChange={(val) => setForm((prev) => ({ ...prev, designation: val }))}
-                            placeholder="Select designation..."
-                        />
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Designation <span className="text-[var(--primary)]">*</span>
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDesignationModalOpen(true)}
+                                    className="text-xs font-bold text-[var(--primary)] hover:underline flex items-center gap-1 cursor-pointer transition-all"
+                                >
+                                    <Settings2 size={13} />
+                                    <span>Manage / Add</span>
+                                </button>
+                            </div>
+                            <CustomDropdown
+                                options={designations.map((d) => ({ value: d.name, label: d.name }))}
+                                value={form.designation}
+                                onChange={(val) => setForm((prev) => ({ ...prev, designation: val }))}
+                                placeholder="Select designation..."
+                                isLoading={isLoadingDesignations}
+                            />
+                        </div>
                         <CustomDropdown
                             label="Initial Status"
                             required
@@ -387,6 +418,15 @@ export default function AddStaffPage() {
                     </motion.button>
                 </motion.div>
             </form>
+
+            <ManageDesignationsModal
+                isOpen={isDesignationModalOpen}
+                onClose={() => setIsDesignationModalOpen(false)}
+                designations={designations}
+                onDesignationsChanged={async (newlyCreated) => {
+                    await fetchDesignations(newlyCreated);
+                }}
+            />
         </div>
     );
 }

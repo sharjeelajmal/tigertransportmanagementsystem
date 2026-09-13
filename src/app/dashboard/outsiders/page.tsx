@@ -14,9 +14,11 @@ import {
     X,
     Trash2,
     Database,
+    TrendingUp,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import DeleteModal from "@/components/DeleteModal";
+import ReportModal from "@/components/customers/ReportModal";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
 import CustomMonthPicker from "@/components/CustomMonthPicker";
@@ -84,6 +86,7 @@ export default function OutsiderPage() {
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [reportOutsider, setReportOutsider] = useState<{ id: string; name: string; code?: string } | null>(null);
 
     useEffect(() => {
         fetchOutsiders();
@@ -439,14 +442,14 @@ export default function OutsiderPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2 min-w-max">
-                                                <motion.button
+                                                {/* <motion.button
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => router.push(`/dashboard/outsiders/allocations/add?outsiderId=${o._id}&category=${encodeURIComponent(o.category)}`)}
                                                     className="px-3.5 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer bg-[var(--primary)] shadow-md min-w-[70px]"
                                                 >
                                                     Allocate
-                                                </motion.button>
+                                                </motion.button> */}
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
@@ -455,6 +458,15 @@ export default function OutsiderPage() {
                                                 >
                                                     <Eye size={13} />
                                                     View
+                                                </motion.button>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => setReportOutsider({ id: o._id, name: o.outsiderName, code: (filtered.indexOf(o) + 1).toString() })}
+                                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-bold cursor-pointer shadow-md min-w-[65px]"
+                                                >
+                                                    <TrendingUp size={13} />
+                                                    Report
                                                 </motion.button>
                                                 {!isManager && (
                                                     <motion.button
@@ -533,13 +545,13 @@ export default function OutsiderPage() {
 
                                     {/* Action */}
                                     <div className="flex items-center gap-2 mt-2 w-full">
-                                        <motion.button
+                                        {/* <motion.button
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => router.push(`/dashboard/outsiders/allocations/add?outsiderId=${o._id}&category=${encodeURIComponent(o.category)}`)}
                                             className="flex-1 py-2 rounded-lg text-white text-xs font-bold flex-shrink-0 cursor-pointer bg-[var(--primary)] shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             Allocate
-                                        </motion.button>
+                                        </motion.button> */}
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => router.push(`/dashboard/outsiders/${o._id}`)}
@@ -547,6 +559,14 @@ export default function OutsiderPage() {
                                         >
                                             <Eye size={13} />
                                             View
+                                        </motion.button>
+                                        <motion.button
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => setReportOutsider({ id: o._id, name: o.outsiderName, code: (filtered.indexOf(o) + 1).toString() })}
+                                            className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold flex-shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                                        >
+                                            <TrendingUp size={13} />
+                                            Report
                                         </motion.button>
                                         {!isManager && (
                                             <motion.button
@@ -594,6 +614,15 @@ export default function OutsiderPage() {
                 isDeleting={isDeleting}
                 title="Remove Outsider"
                 description="Are you sure you want to remove this outsider? They will be permanently deleted from the system."
+            />
+
+            <ReportModal
+                isOpen={!!reportOutsider}
+                customerName={reportOutsider?.name || ""}
+                customerId={reportOutsider?.id}
+                customerCode={reportOutsider?.code}
+                partyType="Outsider"
+                onClose={() => setReportOutsider(null)}
             />
         </div>
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText, Calendar, Loader2, ArrowLeft, Download, Printer } from "lucide-react";
 import CustomDatePicker from "@/components/CustomDatePicker";
@@ -30,6 +30,7 @@ interface ReportModalProps {
     customerName: string;
     customerId?: string;
     customerCode?: string;
+    partyType?: "Customer" | "Outsider";
 }
 
 const toLocalIso = (d: Date): string => {
@@ -60,13 +61,26 @@ const fmtQty = (q: number): string => {
     });
 };
 
-export default function ReportModal({ isOpen, onClose, customerName, customerCode }: ReportModalProps) {
+export default function ReportModal({
+    isOpen,
+    onClose,
+    customerName,
+    customerCode,
+    partyType = "Customer",
+}: ReportModalProps) {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [reportBills, setReportBills] = useState<ReportBill[]>([]);
     const [view, setView] = useState<"selection" | "report">("selection");
+    const [billType, setBillType] = useState<"Customer" | "Outsider">(partyType);
+
+    useEffect(() => {
+        if (isOpen) {
+            setBillType(partyType);
+        }
+    }, [isOpen, partyType]);
 
     const handleGenerate = async () => {
         if (!startDate || !endDate) {
@@ -78,13 +92,25 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
         try {
             const startStr = toLocalIso(startDate);
             const endStr = toLocalIso(endDate);
-            const res = await fetch(`/api/invoices?search=${encodeURIComponent(customerName)}&startDate=${startStr}&endDate=${endStr}&sort=asc`);
+            const typeParam = billType === "Outsider" ? "outsider" : "customer";
+            const res = await fetch(`/api/invoices?search=${encodeURIComponent(customerName)}&type=${typeParam}&startDate=${startStr}&endDate=${endStr}&sort=asc`);
             const data = await res.json();
 
             if (data.success && Array.isArray(data.data)) {
                 const bills: ReportBill[] = [];
 
-                data.data.forEach((inv: any) => {
+                const isOutsider = billType === "Outsider";
+                const filteredInvoices = data.data.filter((inv: any) => {
+                    const invType = String(inv.type || '').toLowerCase();
+                    const invNo = String(inv.invoiceNo || '').toUpperCase();
+                    if (isOutsider) {
+                        return invType === 'allocation' || invNo.startsWith('OT');
+                    } else {
+                        return invType !== 'allocation' && !invNo.startsWith('OT');
+                    }
+                });
+
+                filteredInvoices.forEach((inv: any) => {
                     const rawDate = parseLedgerDate(inv.billingDate || inv.invoiceDate || inv.createdAt);
                     const billDate = formatDateDMY(rawDate);
 
@@ -154,7 +180,7 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${customerName} - Bills Summary</title>
+  <title>${customerName} - ${billType} Bills Summary</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 24px 30px; font-size: 11px; }
@@ -188,7 +214,7 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
 </body>
 </html>`;
 
-            const filename = `${customerName.replace(/[^a-zA-Z0-9_-]/g, "_")}_Bills_Summary.pdf`;
+            const filename = `${customerName.replace(/[^a-zA-Z0-9_-]/g, "_")}_${billType}_Bills_Summary.pdf`;
             const res = await fetch("/api/pdf", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -222,7 +248,7 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${customerName} - Bills Summary</title>
+  <title>${customerName} - ${billType} Bills Summary</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 24px 30px; font-size: 11px; }
@@ -304,10 +330,12 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
                                 </div>
                                 <div>
                                     <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight leading-tight">
-                                        {view === "selection" ? "Customer Bills Summary" : "List of Bills"}
+                                        {view === "selection"
+                                            ? (billType === "Outsider" ? "Outsider Bills Summary" : "Customer Bills Summary")
+                                            : "List of Bills"}
                                     </h3>
                                     <p className="text-xs text-gray-500 font-medium">
-                                        {customerName}
+                                        {customerName} • {billType === "Outsider" ? "Outsider Bills (OT)" : "Customer Bills (TT)"}
                                     </p>
                                 </div>
                             </div>
@@ -327,9 +355,45 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
                                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
                                             Generating Summary For
                                         </p>
-                                        <p className="text-lg font-black text-gray-900">
-                                            {customerName}
-                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-lg font-black text-gray-900">
+                                                {customerName}
+                                            </p>
+                                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${billType === 'Outsider' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {billType === 'Outsider' ? 'Outsider (OT)' : 'Customer (TT)'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Bill Type Selector Toggle */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                                            Select Bill Type
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+                                            <button
+                                                type="button"
+                                                onClick={() => setBillType("Customer")}
+                                                className={`py-2 px-3 text-xs font-bold rounded-lg transition-all ${
+                                                    billType === "Customer"
+                                                        ? "bg-white text-gray-900 shadow-sm"
+                                                        : "text-gray-500 hover:text-gray-900"
+                                                }`}
+                                            >
+                                                Customer Bills (TT)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBillType("Outsider")}
+                                                className={`py-2 px-3 text-xs font-bold rounded-lg transition-all ${
+                                                    billType === "Outsider"
+                                                        ? "bg-white text-gray-900 shadow-sm"
+                                                        : "text-gray-500 hover:text-gray-900"
+                                                }`}
+                                            >
+                                                Outsider Bills (OT)
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-4">
@@ -348,7 +412,7 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
                                     <div className="bg-blue-50/70 rounded-xl p-4 border border-blue-100 flex gap-3">
                                         <Calendar size={18} className="text-blue-500 shrink-0 mt-0.5" />
                                         <p className="text-xs text-blue-700 leading-relaxed font-medium">
-                                            Select the date range to generate the complete bill-by-bill summary report with individual bill subtotals and grand total.
+                                            Select the date range to generate the complete bill-by-bill summary report for {billType.toLowerCase()} bills with individual bill subtotals and grand total.
                                         </p>
                                     </div>
                                 </div>
@@ -374,7 +438,7 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
                                                     <span className="meta-val">{customerCode || "-"}</span>
                                                 </div>
                                                 <div className="meta-row">
-                                                    <span className="meta-label font-bold mr-2">Name:</span>
+                                                    <span className="meta-label font-bold mr-2">{billType === "Outsider" ? "Outsider:" : "Customer:"}</span>
                                                     <span className="meta-val uppercase font-bold tracking-wide">{customerName}</span>
                                                 </div>
                                             </div>
@@ -450,7 +514,7 @@ export default function ReportModal({ isOpen, onClose, customerName, customerCod
                                                 ))
                                             ) : (
                                                 <div className="py-12 text-center text-gray-400 font-bold italic text-sm">
-                                                    No bills found for this customer in the selected date range.
+                                                    No {billType.toLowerCase()} bills found for this party in the selected date range.
                                                 </div>
                                             )}
                                         </div>

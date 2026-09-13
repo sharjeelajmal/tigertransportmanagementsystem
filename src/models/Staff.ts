@@ -49,11 +49,7 @@ const StaffSchema = new Schema<IStaff>(
         mobile: { type: String, required: true, trim: true },
         emergencyContact: { type: String, trim: true },
         address: { type: String, trim: true },
-        designation: {
-            type: String,
-            required: true,
-            enum: ['Operation Manager', 'Transport Manager', 'Warehouse Supervisor', 'Labor', 'Driver', 'Admin', 'Office Staff'],
-        },
+        designation: { type: String, required: true, trim: true },
         basicSalary: { type: Number, required: true },
         photo: { type: String },
         status: { type: String, enum: ['On Duty', 'Off Duty'], default: 'On Duty' },

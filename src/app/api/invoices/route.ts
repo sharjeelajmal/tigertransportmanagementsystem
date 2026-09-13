@@ -25,7 +25,14 @@ export async function GET(request: NextRequest) {
         }
 
         if (type !== 'All') {
-            query.type = type.toLowerCase();
+            const normalizedType = type.toLowerCase();
+            if (normalizedType === 'customer') {
+                query.type = { $in: ['inbound', 'outbound'] };
+            } else if (normalizedType === 'outsider') {
+                query.type = 'allocation';
+            } else {
+                query.type = normalizedType;
+            }
         }
 
         let invoices = await Invoice.find(query).lean() as any[];

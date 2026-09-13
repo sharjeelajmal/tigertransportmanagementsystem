@@ -12,7 +12,7 @@ import CustomDropdown from "@/components/CustomDropdown";
 export interface ExpenseItem {
     _id: string;
     date: string;
-    category: "Vehicle Expense" | "Office Expense";
+    category: string;
     vehicleNo?: string;
     driverName?: string;
     helperName?: string;
@@ -35,12 +35,6 @@ interface ExpenseLedgerModalProps {
     initialSpecificDate?: string;
     initialCategory?: string;
 }
-
-const categoryOptions = [
-    { value: "All", label: "All Categories" },
-    { value: "Vehicle Expense", label: "Vehicle Expense" },
-    { value: "Office Expense", label: "Office Expense" },
-];
 
 const formatDateDMY = (dateVal: any): string => {
     if (!dateVal) return "-";
@@ -82,11 +76,30 @@ export default function ExpenseLedgerModal({
     const [endDate, setEndDate] = useState(initialEndDate);
     const [specificDate, setSpecificDate] = useState(initialSpecificDate);
     const [category, setCategory] = useState(initialCategory);
+    const [categoriesList, setCategoriesList] = useState<string[]>([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [reportExpenses, setReportExpenses] = useState<ExpenseItem[]>([]);
     const [view, setView] = useState<"selection" | "report">("selection");
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch("/api/expenses/categories")
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success && Array.isArray(data.data)) {
+                        setCategoriesList(data.data.map((c: any) => c.name));
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [isOpen]);
+
+    const categoryOptions = [
+        { value: "All", label: "All Categories" },
+        ...categoriesList.map((c) => ({ value: c, label: c })),
+    ];
 
     useEffect(() => {
         if (isOpen) {
@@ -166,20 +179,13 @@ export default function ExpenseLedgerModal({
         () => reportExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0),
         [reportExpenses]
     );
-    const vehicleTotal = useMemo(
-        () =>
-            reportExpenses
-                .filter((e) => e.category === "Vehicle Expense")
-                .reduce((s, e) => s + (e.totalAmount || 0), 0),
-        [reportExpenses]
-    );
-    const officeTotal = useMemo(
-        () =>
-            reportExpenses
-                .filter((e) => e.category === "Office Expense")
-                .reduce((s, e) => s + (e.totalAmount || 0), 0),
-        [reportExpenses]
-    );
+    const categoryTotals = useMemo(() => {
+        const map: Record<string, number> = {};
+        for (const e of reportExpenses) {
+            map[e.category] = (map[e.category] || 0) + (e.totalAmount || 0);
+        }
+        return map;
+    }, [reportExpenses]);
 
     const handleDownloadPDF = async () => {
         setIsDownloading(true);
@@ -537,8 +543,8 @@ export default function ExpenseLedgerModal({
                                                         <div className="col-date flex-[1.4] text-left font-medium">
                                                             {formatDateDMY(item.date)}
                                                         </div>
-                                                        <div className="col-cat flex-[1.6] text-left font-medium uppercase">
-                                                            {item.category === "Vehicle Expense" ? "Vehicle" : "Office"}
+                                                        <div className="col-cat flex-[1.6] text-left font-medium uppercase truncate pr-1">
+                                                            {item.category}
                                                         </div>
                                                         <div className="col-type flex-[2.2] text-left font-bold uppercase truncate pr-1">
                                                             {item.expenseType}
@@ -567,14 +573,12 @@ export default function ExpenseLedgerModal({
                                         {/* Subtotals breakdown */}
                                         {reportExpenses.length > 0 && (
                                             <div className="subtotal-box">
-                                                <div className="subtotal-row">
-                                                    <span>Vehicle Expenses:</span>
-                                                    <span>{fmtMoney(vehicleTotal)}</span>
-                                                </div>
-                                                <div className="subtotal-row">
-                                                    <span>Office Expenses:</span>
-                                                    <span>{fmtMoney(officeTotal)}</span>
-                                                </div>
+                                                {Object.entries(categoryTotals).map(([catName, sum]) => (
+                                                    <div key={catName} className="subtotal-row">
+                                                        <span>{catName}:</span>
+                                                        <span>{fmtMoney(sum)}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
 

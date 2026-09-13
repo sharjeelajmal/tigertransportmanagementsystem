@@ -18,20 +18,30 @@ import { useAuth } from "@/context/AuthContext";
 interface Expense {
     _id: string;
     date: string;
-    category: "Vehicle Expense" | "Office Expense";
+    category: string;
     vehicleNo?: string;
     expenseType: string;
     totalAmount: number;
     status: "Paid" | "Unpaid" | "Partial Paid";
 }
 
-const categoryOptions = [
-    { value: "All", label: "All Categories" },
-    { value: "Vehicle Expense", label: "Vehicle Expense" },
-    { value: "Office Expense", label: "Office Expense" },
+const categoryPalette = [
+    { bg: "rgba(8,145,178,0.1)", color: "#0891B2" },
+    { bg: "rgba(79,70,229,0.1)", color: "#4F46E5" },
+    { bg: "rgba(16,185,129,0.1)", color: "#10B981" },
+    { bg: "rgba(245,158,11,0.1)", color: "#D97706" },
+    { bg: "rgba(236,72,153,0.1)", color: "#DB2777" },
+    { bg: "rgba(139,92,246,0.1)", color: "#7C3AED" },
 ];
 
-
+function getCatStyle(name: string) {
+    if (name === "Vehicle Expense") return categoryPalette[0];
+    if (name === "Office Expense") return categoryPalette[1];
+    let hash = 0;
+    for (let i = 0; i < (name || "").length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    const idx = Math.abs(hash) % categoryPalette.length;
+    return categoryPalette[idx];
+}
 
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, { bg: string; color: string }> = {
@@ -48,9 +58,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function CatBadge({ category }: { category: string }) {
-    const isVehicle = category === "Vehicle Expense";
+    const style = getCatStyle(category);
     return (
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: isVehicle ? "rgba(8,145,178,0.1)" : "rgba(79,70,229,0.1)", color: isVehicle ? "#0891B2" : "#4F46E5" }}>
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: style.bg, color: style.color }}>
             {category}
         </span>
     );
@@ -74,6 +84,7 @@ export default function ExpensesPage() {
     const router = useRouter();
     const { isManager } = useAuth();
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [categoriesList, setCategoriesList] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
@@ -93,10 +104,17 @@ export default function ExpensesPage() {
     const fetchExpenses = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/expenses`);
-            const data = await res.json();
-            if (data.success) setExpenses(data.data);
-        } catch { console.error("Failed to fetch expenses"); }
+            const [resExp, resCat] = await Promise.all([
+                fetch(`/api/expenses`),
+                fetch(`/api/expenses/categories`),
+            ]);
+            const dataExp = await resExp.json();
+            const dataCat = await resCat.json();
+            if (dataExp.success) setExpenses(dataExp.data);
+            if (dataCat.success && Array.isArray(dataCat.data)) {
+                setCategoriesList(dataCat.data.map((c: any) => c.name));
+            }
+        } catch { console.error("Failed to fetch expenses or categories"); }
         finally { setIsLoading(false); }
     };
 
@@ -113,6 +131,16 @@ export default function ExpensesPage() {
         } catch { alert("Network error"); }
         finally { setIsDeleting(false); }
     };
+
+    const allCategories = Array.from(new Set([
+        ...categoriesList,
+        ...expenses.map(e => e.category).filter(Boolean)
+    ]));
+
+    const categoryOptions = [
+        { value: "All", label: "All Categories" },
+        ...allCategories.map(c => ({ value: c, label: c }))
+    ];
 
     const filtered = expenses.filter((e) => {
         const matchSearch = e.expenseType.toLowerCase().includes(search.toLowerCase()) || (e.vehicleNo || "").toLowerCase().includes(search.toLowerCase());
@@ -145,7 +173,19 @@ export default function ExpensesPage() {
     const totalExpense = filtered.reduce((s, e) => s + e.totalAmount, 0);
     const officeExpense = filtered.filter(e => e.category === "Office Expense").reduce((s, e) => s + e.totalAmount, 0);
     const vehicleExpense = filtered.filter(e => e.category === "Vehicle Expense").reduce((s, e) => s + e.totalAmount, 0);
-    const highestCat = vehicleExpense >= officeExpense ? "Vehicles" : "Office";
+
+    const categoryTotals: Record<string, number> = {};
+    for (const e of filtered) {
+        categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.totalAmount;
+    }
+    let highestCat = "None";
+    let maxCatVal = 0;
+    for (const [c, val] of Object.entries(categoryTotals)) {
+        if (val > maxCatVal) {
+            maxCatVal = val;
+            highestCat = c;
+        }
+    }
 
     const statsCards = [
         { label: "Total Expense", value: `${totalExpense.toLocaleString()}/-`, icon: Receipt },
@@ -401,8 +441,14 @@ export default function ExpensesPage() {
                         <div className="divide-y divide-gray-50">
                             {paginatedData.map((e, i) => (
                                 <motion.div key={e._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="px-4 py-4 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: e.category === "Vehicle Expense" ? "rgba(8,145,178,0.1)" : "rgba(79,70,229,0.1)" }}>
-                                        {e.category === "Vehicle Expense" ? <Truck size={16} style={{ color: "#0891B2" }} /> : <Building2 size={16} style={{ color: "#4F46E5" }} />}
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: getCatStyle(e.category).bg }}>
+                                        {e.category === "Vehicle Expense" ? (
+                                            <Truck size={16} style={{ color: getCatStyle(e.category).color }} />
+                                        ) : e.category === "Office Expense" ? (
+                                            <Building2 size={16} style={{ color: getCatStyle(e.category).color }} />
+                                        ) : (
+                                            <Receipt size={16} style={{ color: getCatStyle(e.category).color }} />
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-gray-800 truncate">{e.expenseType}</p>

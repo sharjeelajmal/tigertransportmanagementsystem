@@ -13,7 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 interface Expense {
     _id: string;
     date: string;
-    category: "Vehicle Expense" | "Office Expense";
+    category: string;
     expenseType: string;
     vehicleNo?: string;
     driverName?: string;
@@ -105,7 +105,7 @@ export default function ExpenseProfilePage() {
                 { name: "helperName", label: "Helper Name", value: expense?.helperName },
                 { name: "route", label: "Route", value: expense?.route },
             ];
-        } else if (section === "Office Expense Details") {
+        } else if (section === "Office Expense Details" || section === `${expense?.category} Details`) {
             fields = [
                 { name: "amountGivenTo", label: "Amount Given To", value: expense?.amountGivenTo },
                 { name: "remarks", label: "Remarks", value: expense?.remarks },
@@ -213,13 +213,13 @@ export default function ExpenseProfilePage() {
                 />
             )}
 
-            {/* Office Expense Details */}
+            {/* Non-vehicle / General Expense Details */}
             {!isVehicle && (
                 <InfoCard
-                    title="Office Expense Details"
+                    title={`${expense.category} Details`}
                     columns={2}
                     delay={0.3}
-                    onEdit={() => handleEdit("Office Expense Details")}
+                    onEdit={() => handleEdit(`${expense.category} Details`)}
                     items={[
                         { label: "Amount Given To", value: expense.amountGivenTo || "—" },
                         { label: "Remarks", value: expense.remarks || "—" },

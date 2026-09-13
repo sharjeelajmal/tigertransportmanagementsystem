@@ -36,7 +36,7 @@ const OutsiderProfileHeader = ({ outsider, activeTab, outsiderId, onEditClick }:
                             <motion.div layoutId="activeTab" className="absolute -bottom-[13px] md:-bottom-[17px] left-0 right-0 h-0.5 bg-[var(--primary)] rounded-full" />
                         )}
                     </button>
-                    <button
+                    {/* <button
                         onClick={() => router.push(`/dashboard/outsiders/${outsiderId}/allocations`)}
                         className={`text-xs md:text-sm font-bold transition-all relative pb-2 cursor-pointer ${activeTab === 'allocations' ? 'text-[var(--primary)]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
@@ -44,22 +44,28 @@ const OutsiderProfileHeader = ({ outsider, activeTab, outsiderId, onEditClick }:
                         {activeTab === 'allocations' && (
                             <motion.div layoutId="activeTab" className="absolute -bottom-[13px] md:-bottom-[17px] left-0 right-0 h-0.5 bg-[var(--primary)] rounded-full" />
                         )}
-                    </button>
+                    </button> */}
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={() => router.push('/dashboard/outsiders')}
+                        className="bg-white border-2 border-gray-100 text-gray-600 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 hover:border-gray-200 transition-all cursor-pointer shadow-sm flex-1 sm:flex-initial justify-center"
+                    >
+                        Back
+                    </button>
                     {activeTab === 'profile' && onEditClick && (
                         <button onClick={onEditClick}
                             className="bg-white border-2 border-gray-100 text-gray-600 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 hover:border-gray-200 transition-all cursor-pointer shadow-sm flex-1 sm:flex-initial justify-center">
                             Edit Profile
                         </button>
                     )}
-                    {activeTab === 'allocations' && (
+                    {/* {activeTab === 'allocations' && (
                         <button onClick={() => router.push(`/dashboard/outsiders/allocations/add?outsiderId=${outsiderId}&category=${encodeURIComponent(outsider.category)}`)}
                             className="bg-[var(--primary)] text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 hover:bg-[var(--primary-dark)] transition-all shadow-lg cursor-pointer flex-1 sm:flex-initial justify-center">
                             <Plus size={14} /> Add Allocation
                         </button>
-                    )}
+                    )} */}
                 </div>
             </div>
         </div>

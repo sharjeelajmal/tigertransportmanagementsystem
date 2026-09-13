@@ -538,6 +538,7 @@ export default function CustomersPage() {
                 customerName={reportCustomer?.name || ""}
                 customerId={reportCustomer?.id}
                 customerCode={reportCustomer?.code}
+                partyType="Customer"
                 onClose={() => setReportCustomer(null)}
             />
         </div>

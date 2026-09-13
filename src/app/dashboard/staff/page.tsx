@@ -38,16 +38,32 @@ interface StaffMember {
     photo?: string;
 }
 
-const designationOptions = [
-    { value: "All", label: "All Designations" },
-    { value: "Operation Manager", label: "Operation Manager" },
-    { value: "Transport Manager", label: "Transport Manager" },
-    { value: "Warehouse Supervisor", label: "Warehouse Supervisor" },
-    { value: "Labor", label: "Labor" },
-    { value: "Driver", label: "Driver" },
-    { value: "Admin", label: "Admin" },
-    { value: "Office Staff", label: "Office Staff" },
+const desColorPalette = [
+    { bg: "rgba(5,150,105,0.1)", color: "#059669" },
+    { bg: "rgba(79,70,229,0.1)", color: "#4F46E5" },
+    { bg: "rgba(8,145,178,0.1)", color: "#0891B2" },
+    { bg: "rgba(217,119,6,0.1)", color: "#D97706" },
+    { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" },
+    { bg: "rgba(124,58,237,0.1)", color: "#7C3AED" },
+    { bg: "rgba(99,102,241,0.1)", color: "#6366F1" },
+    { bg: "rgba(236,72,153,0.1)", color: "#DB2777" },
 ];
+
+const desBadgeStyle = (d: string) => {
+    const map: Record<string, { bg: string; color: string }> = {
+        Driver: { bg: "rgba(5,150,105,0.1)", color: "#059669" },
+        "Operation Manager": { bg: "rgba(79,70,229,0.1)", color: "#4F46E5" },
+        "Transport Manager": { bg: "rgba(8,145,178,0.1)", color: "#0891B2" },
+        "Warehouse Supervisor": { bg: "rgba(217,119,6,0.1)", color: "#D97706" },
+        Labor: { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" },
+        Admin: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED" },
+        "Office Staff": { bg: "rgba(99,102,241,0.1)", color: "#6366F1" },
+    };
+    if (map[d]) return map[d];
+    let hash = 0;
+    for (let i = 0; i < (d || "").length; i++) hash = d.charCodeAt(i) + ((hash << 5) - hash);
+    return desColorPalette[Math.abs(hash) % desColorPalette.length];
+};
 
 const statusOptions = [
     { value: "All", label: "All Statuses" },
@@ -66,23 +82,11 @@ const avatarColors: Record<string, string> = {
     "Office Staff": "#6366F1",
 };
 
-const desBadgeStyle = (d: string) => {
-    const map: Record<string, { bg: string; color: string }> = {
-        Driver: { bg: "rgba(5,150,105,0.1)", color: "#059669" },
-        "Operation Manager": { bg: "rgba(79,70,229,0.1)", color: "#4F46E5" },
-        "Transport Manager": { bg: "rgba(8,145,178,0.1)", color: "#0891B2" },
-        "Warehouse Supervisor": { bg: "rgba(217,119,6,0.1)", color: "#D97706" },
-        Labor: { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" },
-        Admin: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED" },
-        "Office Staff": { bg: "rgba(99,102,241,0.1)", color: "#6366F1" },
-    };
-    return map[d] || { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" };
-};
-
 export default function StaffPage() {
     const router = useRouter();
     const { isManager } = useAuth();
     const [staff, setStaff] = useState<StaffMember[]>([]);
+    const [designationsList, setDesignationsList] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [designation, setDesignation] = useState("All");
@@ -109,15 +113,32 @@ export default function StaffPage() {
     const fetchStaff = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/staff");
-            const data = await res.json();
-            if (data.success) setStaff(data.data);
+            const [resStaff, resDes] = await Promise.all([
+                fetch("/api/staff"),
+                fetch("/api/designations"),
+            ]);
+            const dataStaff = await resStaff.json();
+            const dataDes = await resDes.json();
+            if (dataStaff.success) setStaff(dataStaff.data);
+            if (dataDes.success && Array.isArray(dataDes.data)) {
+                setDesignationsList(dataDes.data.map((d: any) => d.name));
+            }
         } catch {
-            console.error("Failed to fetch staff");
+            console.error("Failed to fetch staff or designations");
         } finally {
             setIsLoading(false);
         }
     };
+
+    const allDesignations = Array.from(new Set([
+        ...designationsList,
+        ...staff.map(s => s.designation).filter(Boolean)
+    ]));
+
+    const designationOptions = [
+        { value: "All", label: "All Designations" },
+        ...allDesignations.map(d => ({ value: d, label: d }))
+    ];
 
     const fetchAttendance = async () => {
         try {

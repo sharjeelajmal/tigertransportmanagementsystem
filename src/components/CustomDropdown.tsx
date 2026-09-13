@@ -19,6 +19,7 @@ interface CustomDropdownProps {
     className?: string;
     searchable?: boolean;
     isLoading?: boolean;
+    direction?: "down" | "up";
 }
 
 export default function CustomDropdown({
@@ -31,10 +32,12 @@ export default function CustomDropdown({
     className = "",
     searchable = false,
     isLoading = false,
+    direction = "down",
 }: CustomDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const ref = useRef<HTMLDivElement>(null);
+    const isUp = direction === "up";
 
     const selected = options.find((o) => o.value === value);
 
@@ -69,45 +72,48 @@ export default function CustomDropdown({
                 </label>
             )}
 
-            {/* Trigger */}
-            <motion.button
-                type="button"
-                whileTap={{ scale: 0.99 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 bg-white text-sm font-medium text-left transition-all duration-200 outline-none"
-                style={{
-                    borderColor: isOpen ? "var(--primary)" : "#E5E7EB",
-                    boxShadow: isOpen ? "0 0 0 4px rgba(var(--primary-rgb, 181,1,4),0.07)" : "none",
-                    color: selected ? "#0D0D0D" : "#9CA3AF",
-                }}
-            >
-                <span className="truncate">{selected ? selected.label : placeholder}</span>
-                <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="flex-shrink-0 ml-2"
+            <div className="relative">
+                {/* Trigger */}
+                <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.99 }}
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 bg-white text-sm font-medium text-left transition-all duration-200 outline-none cursor-pointer"
+                    style={{
+                        borderColor: isOpen ? "var(--primary)" : "#E5E7EB",
+                        boxShadow: isOpen ? "0 0 0 4px rgba(var(--primary-rgb, 181,1,4),0.07)" : "none",
+                        color: selected ? "#0D0D0D" : "#9CA3AF",
+                    }}
                 >
-                    <ChevronDown
-                        size={16}
-                        style={{ color: isOpen ? "var(--primary)" : "#9CA3AF" }}
-                    />
-                </motion.div>
-            </motion.button>
-
-            {/* Dropdown Panel */}
-            <AnimatePresence>
-                {isOpen && (
+                    <span className="truncate">{selected ? selected.label : placeholder}</span>
                     <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                        transition={{ duration: 0.18, ease: "easeOut" }}
-                        className="absolute w-full mt-1.5 bg-white rounded-2xl border border-gray-100 overflow-hidden"
-                        style={{
-                            zIndex: 9999,
-                            boxShadow: "0 20px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(var(--primary-rgb, 181,1,4),0.06)",
-                        }}
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="flex-shrink-0 ml-2"
                     >
+                        <ChevronDown
+                            size={16}
+                            style={{ color: isOpen ? "var(--primary)" : "#9CA3AF" }}
+                        />
+                    </motion.div>
+                </motion.button>
+
+                {/* Dropdown Panel */}
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: isUp ? 8 : -8, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: isUp ? 8 : -8, scale: 0.97 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            className={`absolute w-full bg-white rounded-2xl border border-gray-100 overflow-hidden ${
+                                isUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
+                            }`}
+                            style={{
+                                zIndex: 9999,
+                                boxShadow: "0 20px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(var(--primary-rgb, 181,1,4),0.06)",
+                            }}
+                        >
                         <div className="p-1.5 flex flex-col max-h-64">
                             {searchable && (
                                 <div className="p-1 border-b border-gray-100 mb-1 sticky top-0 bg-white z-10">
@@ -180,6 +186,7 @@ export default function CustomDropdown({
                     </motion.div>
                 )}
             </AnimatePresence>
+            </div>
         </div>
     );
 }
