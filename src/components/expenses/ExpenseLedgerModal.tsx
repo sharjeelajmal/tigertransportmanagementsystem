@@ -27,6 +27,21 @@ export interface ExpenseItem {
     status: "Paid" | "Unpaid" | "Partial Paid";
 }
 
+interface MergedExpense {
+    key: string;
+    dateFrom: string;
+    dateTo: string;
+    category: string;
+    expenseType: string;
+    target: string;
+    routes: string;
+    totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    status: "Paid" | "Unpaid" | "Partial Paid";
+    count: number;
+}
+
 interface ExpenseLedgerModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -174,18 +189,84 @@ export default function ExpenseLedgerModal({
         }
     };
 
+    // Merge expenses by type+vehicle or type+person
+    const mergedExpenses = useMemo((): MergedExpense[] => {
+        const groups = new Map<string, ExpenseItem[]>();
+
+        for (const e of reportExpenses) {
+            const isVehicle = e.category === "Vehicle Expense";
+            const key = isVehicle
+                ? `${e.expenseType}||${e.vehicleNo || ""}`
+                : `${e.expenseType}||${e.amountGivenTo || ""}`;
+
+            const existing = groups.get(key);
+            if (existing) {
+                existing.push(e);
+            } else {
+                groups.set(key, [e]);
+            }
+        }
+
+        const result: MergedExpense[] = [];
+        for (const [key, items] of groups) {
+            const totalAmount = items.reduce((s, i) => s + (i.totalAmount || 0), 0);
+            const paidAmount = items.reduce((s, i) => s + (i.paidAmount || 0), 0);
+            const remainingAmount = totalAmount - paidAmount;
+
+            let status: "Paid" | "Unpaid" | "Partial Paid";
+            if (paidAmount <= 0) status = "Unpaid";
+            else if (paidAmount >= totalAmount) status = "Paid";
+            else status = "Partial Paid";
+
+            const dates = items.map((i) => i.date).sort();
+            const dateFrom = dates[0];
+            const dateTo = dates[dates.length - 1];
+
+            const distinctRoutes = [
+                ...new Set(
+                    items
+                        .flatMap((i) => [
+                            i.route || "",
+                            i.driverName ? `Dr: ${i.driverName}` : "",
+                            i.remarks || "",
+                        ])
+                        .filter(Boolean)
+                ),
+            ].join(" • ");
+
+            const first = items[0];
+            result.push({
+                key,
+                dateFrom,
+                dateTo,
+                category: first.category,
+                expenseType: first.expenseType,
+                target: first.vehicleNo || first.amountGivenTo || "—",
+                routes: distinctRoutes || "—",
+                totalAmount,
+                paidAmount,
+                remainingAmount,
+                status,
+                count: items.length,
+            });
+        }
+
+        result.sort((a, b) => (a.dateFrom > b.dateFrom ? 1 : a.dateFrom < b.dateFrom ? -1 : 0));
+        return result;
+    }, [reportExpenses]);
+
     // Calculate totals
     const grandTotal = useMemo(
-        () => reportExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0),
-        [reportExpenses]
+        () => mergedExpenses.reduce((s, e) => s + e.totalAmount, 0),
+        [mergedExpenses]
     );
     const categoryTotals = useMemo(() => {
         const map: Record<string, number> = {};
-        for (const e of reportExpenses) {
-            map[e.category] = (map[e.category] || 0) + (e.totalAmount || 0);
+        for (const e of mergedExpenses) {
+            map[e.category] = (map[e.category] || 0) + e.totalAmount;
         }
         return map;
-    }, [reportExpenses]);
+    }, [mergedExpenses]);
 
     const handleDownloadPDF = async () => {
         setIsDownloading(true);
@@ -531,17 +612,24 @@ export default function ExpenseLedgerModal({
 
                                         {/* 4. Items List */}
                                         <div className="expenses-container space-y-1">
-                                            {reportExpenses.length > 0 ? (
-                                                reportExpenses.map((item, idx) => (
+                                            {mergedExpenses.length > 0 ? (
+                                                mergedExpenses.map((item, idx) => (
                                                     <div
-                                                        key={item._id}
+                                                        key={item.key}
                                                         className="item-row flex items-center text-xs sm:text-[12px] text-gray-900 font-sans leading-relaxed hover:bg-gray-50/60 print:hover:bg-transparent"
                                                     >
                                                         <div className="col-sr flex-[0.6] text-center font-medium text-gray-500">
                                                             {String(idx + 1).padStart(2, "0")}
                                                         </div>
                                                         <div className="col-date flex-[1.4] text-left font-medium">
-                                                            {formatDateDMY(item.date)}
+                                                            {item.dateFrom === item.dateTo
+                                                                ? formatDateDMY(item.dateFrom)
+                                                                : `${formatDateDMY(item.dateFrom)} – ${formatDateDMY(item.dateTo)}`}
+                                                            {item.count > 1 && (
+                                                                <span className="ml-1 text-[9px] font-bold text-gray-400 print:inline">
+                                                                    ({item.count})
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="col-cat flex-[1.6] text-left font-medium uppercase truncate pr-1">
                                                             {item.category}
@@ -550,10 +638,10 @@ export default function ExpenseLedgerModal({
                                                             {item.expenseType}
                                                         </div>
                                                         <div className="col-target flex-[1.8] text-left uppercase font-medium truncate pr-1">
-                                                            {item.vehicleNo || item.amountGivenTo || "—"}
+                                                            {item.target}
                                                         </div>
                                                         <div className="col-remarks flex-[2.6] text-left font-medium text-gray-700 truncate pr-1">
-                                                            {[item.route, item.driverName ? `Dr: ${item.driverName}` : "", item.remarks].filter(Boolean).join(" • ") || "—"}
+                                                            {item.routes}
                                                         </div>
                                                         <div className="col-status flex-[1.2] text-center font-bold text-[11px]">
                                                             {item.status}
@@ -571,7 +659,7 @@ export default function ExpenseLedgerModal({
                                         </div>
 
                                         {/* Subtotals breakdown */}
-                                        {reportExpenses.length > 0 && (
+                                        {mergedExpenses.length > 0 && (
                                             <div className="subtotal-box">
                                                 {Object.entries(categoryTotals).map(([catName, sum]) => (
                                                     <div key={catName} className="subtotal-row">
@@ -583,7 +671,7 @@ export default function ExpenseLedgerModal({
                                         )}
 
                                         {/* 5. Grand Total Footer */}
-                                        {reportExpenses.length > 0 && (
+                                        {mergedExpenses.length > 0 && (
                                             <div className="party-total-box flex justify-end items-center gap-6 border-t-2 border-black pt-3 mt-4 text-xs sm:text-sm font-black text-gray-950 font-sans break-inside-avoid">
                                                 <span className="tracking-wide uppercase">Grand Total Expense:</span>
                                                 <span className="text-right min-w-[140px] font-black text-sm sm:text-base">
