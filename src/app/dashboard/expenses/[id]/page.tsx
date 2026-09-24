@@ -25,7 +25,6 @@ interface Expense {
     paidAmount?: number;
     remainingAmount?: number;
     paymentMethod?: string;
-    status: "Paid" | "Unpaid" | "Partial Paid";
 }
 
 function fmt(d?: string) {
@@ -35,22 +34,6 @@ function fmt(d?: string) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-// Status badge — always white text (readable on red bg AND on white bg)
-function StatusBadge({ status }: { status: string }) {
-    const bgMap: Record<string, string> = {
-        Paid: "rgba(255,255,255,0.25)",
-        Unpaid: "rgba(255,255,255,0.15)",
-        "Partial Paid": "rgba(255,255,255,0.20)",
-    };
-    return (
-        <span
-            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold text-white border border-white/30"
-            style={{ background: bgMap[status] || bgMap["Unpaid"], backdropFilter: "blur(4px)" }}
-        >
-            {status}
-        </span>
-    );
-}
 
 export default function ExpenseProfilePage() {
     const router = useRouter();
@@ -116,7 +99,6 @@ export default function ExpenseProfilePage() {
                 { name: "paidAmount", label: "Paid Amount", type: "number", value: expense?.paidAmount },
                 { name: "remainingAmount", label: "Remaining Amount", type: "number", value: expense?.remainingAmount },
                 { name: "paymentMethod", label: "Payment Method", type: "select", options: ["Cash", "Bank Transfer", "Cheque", "Online"], value: expense?.paymentMethod },
-                { name: "status", label: "Status", type: "select", options: ["Paid", "Unpaid", "Partial Paid"], value: expense?.status },
             ];
         }
         setEditFields(fields);
@@ -157,9 +139,8 @@ export default function ExpenseProfilePage() {
                     </button>
                 )}
 
-                {/* Status badge + Amount overlayed bottom-right */}
+                {/* Amount overlayed bottom-right */}
                 <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-20 flex flex-col items-end gap-2">
-                    <StatusBadge status={expense.status} />
                     <p className="text-white font-black text-2xl md:text-3xl leading-none">
                         {expense.totalAmount.toLocaleString()}/-
                     </p>
@@ -192,7 +173,6 @@ export default function ExpenseProfilePage() {
                         { label: "Paid Amount", value: `${(expense.paidAmount || 0).toLocaleString()} PKR` },
                         { label: "Remaining Amount", value: `${(expense.remainingAmount || 0).toLocaleString()} PKR` },
                         { label: "Payment Method", value: expense.paymentMethod || "—" },
-                        { label: "Status", value: expense.status },
                     ]}
                 />
             </div>

@@ -22,7 +22,6 @@ interface Expense {
     vehicleNo?: string;
     expenseType: string;
     totalAmount: number;
-    status: "Paid" | "Unpaid" | "Partial Paid";
 }
 
 const categoryPalette = [
@@ -43,19 +42,6 @@ function getCatStyle(name: string) {
     return categoryPalette[idx];
 }
 
-function StatusBadge({ status }: { status: string }) {
-    const map: Record<string, { bg: string; color: string }> = {
-        Paid: { bg: "rgba(5,150,105,0.1)", color: "#059669" },
-        Unpaid: { bg: "rgba(var(--primary-rgb, 181,1,4),0.08)", color: "var(--primary)" },
-        "Partial Paid": { bg: "rgba(234,179,8,0.1)", color: "#B45309" },
-    };
-    const s = map[status] || map["Unpaid"];
-    return (
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: s.bg, color: s.color }}>
-            {status}
-        </span>
-    );
-}
 
 function CatBadge({ category }: { category: string }) {
     const style = getCatStyle(category);
@@ -382,16 +368,16 @@ export default function ExpensesPage() {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-gray-100">
-                                {["Sr.#", "Date", "Category", "Vehicle No.", "Expense", "Total Amount", "Status", "Actions"].map((h) => (
+                                {["Sr.#", "Date", "Category", "Vehicle No.", "Expense", "Total Amount", "Actions"].map((h) => (
                                     <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr><td colSpan={8} className="px-6 py-16 text-center"><div className="flex flex-col items-center gap-3"><Loader size="md" /><p className="text-gray-400 text-sm">Loading expenses...</p></div></td></tr>
+                                <tr><td colSpan={7} className="px-6 py-16 text-center"><div className="flex flex-col items-center gap-3"><Loader size="md" /><p className="text-gray-400 text-sm">Loading expenses...</p></div></td></tr>
                             ) : filtered.length === 0 ? (
-                                <tr><td colSpan={8} className="px-6 py-16 text-center">
+                                <tr><td colSpan={7} className="px-6 py-16 text-center">
                                     <div className="flex flex-col items-center gap-3">
                                         <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center"><Receipt className="w-7 h-7 text-gray-300" /></div>
                                         <p className="text-gray-400 text-sm font-medium">No expenses found</p>
@@ -407,7 +393,6 @@ export default function ExpensesPage() {
                                         <td className="px-5 py-4"><span className="text-sm font-medium text-gray-600">{e.vehicleNo || "—"}</span></td>
                                         <td className="px-5 py-4"><span className="text-sm font-semibold text-gray-800">{e.expenseType}</span></td>
                                         <td className="px-5 py-4"><span className="text-sm font-bold text-gray-900 whitespace-nowrap">{e.totalAmount.toLocaleString()}/-</span></td>
-                                        <td className="px-5 py-4"><StatusBadge status={e.status} /></td>
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-2">
                                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => router.push(`/dashboard/expenses/${e._id}`)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", boxShadow: "0 2px 8px rgba(var(--primary-rgb, 181,1,4),0.3)" }}>
@@ -453,7 +438,6 @@ export default function ExpensesPage() {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-gray-800 truncate">{e.expenseType}</p>
                                         <p className="text-xs text-gray-400 truncate">{formatDate(e.date)}{e.vehicleNo ? ` · ${e.vehicleNo}` : ""}</p>
-                                        <div className="flex items-center gap-2 mt-1"><StatusBadge status={e.status} /></div>
                                     </div>
                                     <div className="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
                                         <p className="text-sm font-black text-gray-900">{e.totalAmount.toLocaleString()}/-</p>

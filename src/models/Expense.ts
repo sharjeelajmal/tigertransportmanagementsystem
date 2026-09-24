@@ -18,7 +18,6 @@ export interface IExpense {
     paidAmount?: number;
     remainingAmount?: number;
     paymentMethod?: string;
-    status: 'Paid' | 'Unpaid' | 'Partial Paid';
 }
 
 const ExpenseSchema = new Schema<IExpense>(
@@ -36,14 +35,12 @@ const ExpenseSchema = new Schema<IExpense>(
         paidAmount: { type: Number, default: 0 },
         remainingAmount: { type: Number, default: 0 },
         paymentMethod: { type: String, trim: true },
-        status: { type: String, required: true, enum: ['Paid', 'Unpaid', 'Partial Paid'], default: 'Unpaid' },
     },
     { timestamps: true }
 );
 
 ExpenseSchema.index({ date: -1 });
 ExpenseSchema.index({ category: 1 });
-ExpenseSchema.index({ status: 1 });
 
 const Expense = models.Expense || mongoose.model<IExpense>('Expense', ExpenseSchema);
 export default Expense;

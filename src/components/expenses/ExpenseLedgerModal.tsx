@@ -24,7 +24,6 @@ export interface ExpenseItem {
     paidAmount?: number;
     remainingAmount?: number;
     paymentMethod?: string;
-    status: "Paid" | "Unpaid" | "Partial Paid";
 }
 
 interface MergedExpense {
@@ -38,7 +37,6 @@ interface MergedExpense {
     totalAmount: number;
     paidAmount: number;
     remainingAmount: number;
-    status: "Paid" | "Unpaid" | "Partial Paid";
     count: number;
 }
 
@@ -213,11 +211,6 @@ export default function ExpenseLedgerModal({
             const paidAmount = items.reduce((s, i) => s + (i.paidAmount || 0), 0);
             const remainingAmount = totalAmount - paidAmount;
 
-            let status: "Paid" | "Unpaid" | "Partial Paid";
-            if (paidAmount <= 0) status = "Unpaid";
-            else if (paidAmount >= totalAmount) status = "Paid";
-            else status = "Partial Paid";
-
             const dates = items.map((i) => i.date).sort();
             const dateFrom = dates[0];
             const dateTo = dates[dates.length - 1];
@@ -246,7 +239,6 @@ export default function ExpenseLedgerModal({
                 totalAmount,
                 paidAmount,
                 remainingAmount,
-                status,
                 count: items.length,
             });
         }
@@ -302,9 +294,8 @@ export default function ExpenseLedgerModal({
     .col-cat { flex: 1.6; text-align: left; }
     .col-type { flex: 2.2; text-align: left; }
     .col-target { flex: 1.8; text-align: left; }
-    .col-remarks { flex: 2.6; text-align: left; }
-    .col-status { flex: 1.2; text-align: center; }
-    .col-amt { flex: 1.8; text-align: right; }
+    .col-remarks { flex: 3.2; text-align: left; }
+    .col-amt { flex: 2.0; text-align: right; }
     .item-row { display: flex; padding: 3px 0; font-size: 10.5px; border-bottom: 1px dashed #e5e7eb; }
     .item-row:last-child { border-bottom: none; }
     .subtotal-box { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; border-top: 1px solid #777; padding-top: 5px; margin-top: 10px; font-size: 11px; font-weight: bold; }
@@ -376,9 +367,8 @@ export default function ExpenseLedgerModal({
     .col-cat { flex: 1.6; text-align: left; }
     .col-type { flex: 2.2; text-align: left; }
     .col-target { flex: 1.8; text-align: left; }
-    .col-remarks { flex: 2.6; text-align: left; }
-    .col-status { flex: 1.2; text-align: center; }
-    .col-amt { flex: 1.8; text-align: right; }
+    .col-remarks { flex: 3.2; text-align: left; }
+    .col-amt { flex: 2.0; text-align: right; }
     .item-row { display: flex; padding: 3px 0; font-size: 10.5px; border-bottom: 1px dashed #e5e7eb; }
     .item-row:last-child { border-bottom: none; }
     .subtotal-box { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; border-top: 1px solid #777; padding-top: 5px; margin-top: 10px; font-size: 11px; font-weight: bold; }
@@ -605,9 +595,8 @@ export default function ExpenseLedgerModal({
                                             <div className="col-cat flex-[1.6] text-left">Category</div>
                                             <div className="col-type flex-[2.2] text-left">Expense Type</div>
                                             <div className="col-target flex-[1.8] text-left">Vehicle / Person</div>
-                                            <div className="col-remarks flex-[2.6] text-left">Route / Remarks</div>
-                                            <div className="col-status flex-[1.2] text-center">Status</div>
-                                            <div className="col-amt flex-[1.8] text-right">Amount</div>
+                                            <div className="col-remarks flex-[3.2] text-left">Route / Remarks</div>
+                                            <div className="col-amt flex-[2.0] text-right">Amount</div>
                                         </div>
 
                                         {/* 4. Items List */}
@@ -640,13 +629,10 @@ export default function ExpenseLedgerModal({
                                                         <div className="col-target flex-[1.8] text-left uppercase font-medium truncate pr-1">
                                                             {item.target}
                                                         </div>
-                                                        <div className="col-remarks flex-[2.6] text-left font-medium text-gray-700 truncate pr-1">
+                                                        <div className="col-remarks flex-[3.2] text-left font-medium text-gray-700 truncate pr-1">
                                                             {item.routes}
                                                         </div>
-                                                        <div className="col-status flex-[1.2] text-center font-bold text-[11px]">
-                                                            {item.status}
-                                                        </div>
-                                                        <div className="col-amt flex-[1.8] text-right font-bold">
+                                                        <div className="col-amt flex-[2.0] text-right font-bold">
                                                             {fmtMoney(item.totalAmount)}
                                                         </div>
                                                     </div>

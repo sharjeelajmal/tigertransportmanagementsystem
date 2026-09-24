@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         const {
-            date, category, expenseType, totalAmount, status,
+            date, category, expenseType, totalAmount,
             vehicleNo, driverName, helperName, route,
             amountGivenTo, remarks,
             paidAmount, remainingAmount, paymentMethod,
@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
             paidAmount: Number(paidAmount) || 0,
             remainingAmount: Number(remainingAmount) || 0,
             paymentMethod: paymentMethod || '',
-            status: status || 'Unpaid',
             // Vehicle fields
             vehicleNo: vehicleNo || '',
             driverName: driverName || '',

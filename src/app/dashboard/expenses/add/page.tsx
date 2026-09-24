@@ -17,12 +17,6 @@ const paymentMethodOptions = [
     { value: "Online", label: "Online" },
 ];
 
-const statusOptions = [
-    { value: "Paid", label: "Paid" },
-    { value: "Unpaid", label: "Unpaid" },
-    { value: "Partial Paid", label: "Partial Paid" },
-];
-
 const inputCls =
     "w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-sm font-medium text-gray-800 placeholder-gray-300 outline-none transition-all focus:border-[var(--primary)] focus:shadow-[0_0_0_4px_rgba(var(--primary-rgb, 181,1,4),0.07)]";
 
@@ -56,7 +50,6 @@ export default function AddExpensePage() {
     const [paidAmount, setPaidAmount] = useState("");
     const [remainingAmount, setRemainingAmount] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("");
-    const [status, setStatus] = useState<"Paid" | "Unpaid" | "Partial Paid">("Unpaid");
 
     const fetchCategories = async (selectName?: string) => {
         try {
@@ -122,7 +115,6 @@ export default function AddExpensePage() {
                 paidAmount: Number(paidAmount) || 0,
                 remainingAmount: Number(remainingAmount) || 0,
                 paymentMethod,
-                status,
             };
             if (category === "Vehicle Expense") {
                 payload.vehicleNo = vehicleNo;
@@ -359,19 +351,12 @@ export default function AddExpensePage() {
                                 />
                             </Field>
                         </div>
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="mt-4 max-w-sm">
                             <CustomDropdown
                                 label="Payment Method"
                                 options={paymentMethodOptions}
                                 value={paymentMethod}
                                 onChange={setPaymentMethod}
-                                direction="up"
-                            />
-                            <CustomDropdown
-                                label="Status"
-                                options={statusOptions}
-                                value={status}
-                                onChange={(v) => setStatus(v as any)}
                                 direction="up"
                             />
                         </div>
