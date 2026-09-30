@@ -15,10 +15,10 @@ interface CustomDatePickerProps {
 
 type ViewMode = 'days' | 'months' | 'years';
 
-// Helper: YYYY-MM-DD string ko timezone-safe Date mein convert karo
 function parseLocalDate(v: string | Date): Date {
     if (v instanceof Date) return v;
-    const parts = v.split('-');
+    const dateOnly = v.includes('T') ? v.split('T')[0] : v;
+    const parts = dateOnly.split('-');
     if (parts.length === 3) {
         return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
     }

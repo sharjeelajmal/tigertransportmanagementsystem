@@ -92,7 +92,12 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                             <CustomDatePicker
                                                 label={field.label}
                                                 value={formData[field.name]}
-                                                onChange={(date) => handleChange(field.name, date.toISOString())}
+                                                onChange={(date) => {
+                                                    const y = date.getFullYear();
+                                                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                                                    const d = String(date.getDate()).padStart(2, '0');
+                                                    handleChange(field.name, `${y}-${m}-${d}`);
+                                                }}
                                             />
                                         ) : (
                                             <>
