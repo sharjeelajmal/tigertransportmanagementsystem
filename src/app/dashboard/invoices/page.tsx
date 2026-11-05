@@ -22,6 +22,7 @@ import CustomDatePicker from "@/components/CustomDatePicker";
 import Pagination from "@/components/Pagination";
 import DeleteModal from "@/components/DeleteModal";
 import { useAuth } from "@/context/AuthContext";
+import { toLocalYMD } from "@/lib/ledgerRules";
 
 interface Invoice {
     _id: string;
@@ -66,8 +67,8 @@ export default function InvoicesPage() {
         setIsLoading(true);
         try {
             const params = new URLSearchParams();
-            if (startDate) params.set("startDate", startDate.toISOString().split('T')[0]);
-            if (endDate) params.set("endDate", endDate.toISOString().split('T')[0]);
+            if (startDate) params.set("startDate", toLocalYMD(startDate));
+            if (endDate) params.set("endDate", toLocalYMD(endDate));
             
             const res = await fetch(`/api/invoices?${params.toString()}`);
             const data = await res.json();

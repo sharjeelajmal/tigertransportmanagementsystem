@@ -23,6 +23,7 @@ import DeleteModal from "@/components/DeleteModal";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
 import ReportModal from "@/components/customers/ReportModal";
+import { toLocalYMD } from "@/lib/ledgerRules";
 import { useAuth } from "@/context/AuthContext";
 
 interface Customer {
@@ -63,8 +64,8 @@ export default function CustomersPage() {
         setIsLoading(true);
         try {
             const params = new URLSearchParams();
-            if (startDate) params.set("startDate", startDate.toISOString().split('T')[0]);
-            if (endDate) params.set("endDate", endDate.toISOString().split('T')[0]);
+            if (startDate) params.set("startDate", toLocalYMD(startDate));
+            if (endDate) params.set("endDate", toLocalYMD(endDate));
             
             const res = await fetch(`/api/customers?${params.toString()}`);
             const data = await res.json();
@@ -103,8 +104,8 @@ export default function CustomersPage() {
 
     const handleGenerateReport = (startDate: Date, endDate: Date) => {
         if (!reportCustomer) return;
-        const startStr = startDate.toISOString().split('T')[0];
-        const endStr = endDate.toISOString().split('T')[0];
+        const startStr = toLocalYMD(startDate);
+        const endStr = toLocalYMD(endDate);
         router.push(`/dashboard/invoices?search=${encodeURIComponent(reportCustomer.name)}&startDate=${startStr}&endDate=${endStr}`);
     };
 

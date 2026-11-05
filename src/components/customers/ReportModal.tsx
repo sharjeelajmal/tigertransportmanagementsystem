@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText, Calendar, Loader2, ArrowLeft, Download, Printer } from "lucide-react";
 import CustomDatePicker from "@/components/CustomDatePicker";
-import { parseLedgerDate } from "@/lib/ledgerRules";
+import { parseLedgerDate, invoiceBillDate, toLocalYMD } from "@/lib/ledgerRules";
 
 interface ReportBillItem {
     id?: string;
@@ -32,13 +32,6 @@ interface ReportModalProps {
     customerCode?: string;
     partyType?: "Customer" | "Outsider";
 }
-
-const toLocalIso = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
 const formatDateDMY = (dateVal: any): string => {
     const d = parseLedgerDate(dateVal);
@@ -90,10 +83,12 @@ export default function ReportModal({
 
         setIsLoading(true);
         try {
-            const startStr = toLocalIso(startDate);
-            const endStr = toLocalIso(endDate);
+            const startStr = toLocalYMD(startDate);
+            const endStr = toLocalYMD(endDate);
             const typeParam = billType === "Outsider" ? "outsider" : "customer";
-            const res = await fetch(`/api/invoices?search=${encodeURIComponent(customerName)}&type=${typeParam}&startDate=${startStr}&endDate=${endStr}&sort=asc`);
+            // "party" = exact name match (same party the ledger uses). The old "search" param treated
+            // names like "FARAZ (PROGRESSIVE)" as a regex and returned no bills.
+            const res = await fetch(`/api/invoices?party=${encodeURIComponent(customerName)}&type=${typeParam}&startDate=${startStr}&endDate=${endStr}&sort=asc`);
             const data = await res.json();
 
             if (data.success && Array.isArray(data.data)) {
@@ -111,7 +106,7 @@ export default function ReportModal({
                 });
 
                 filteredInvoices.forEach((inv: any) => {
-                    const rawDate = parseLedgerDate(inv.billingDate || inv.invoiceDate || inv.createdAt);
+                    const rawDate = invoiceBillDate(inv);
                     const billDate = formatDateDMY(rawDate);
 
                     let items: ReportBillItem[] = [];

@@ -26,19 +26,79 @@ export interface ExpenseItem {
     paymentMethod?: string;
 }
 
-interface MergedExpense {
+/** One line on the summary sheet: all entries of one expense type + vehicle/person, within one category. */
+interface SummaryRow {
     key: string;
-    dateFrom: string;
-    dateTo: string;
-    category: string;
     expenseType: string;
-    target: string;
-    routes: string;
+    target: string;   // vehicle no. or the person the amount was given to
+    vehicle: string;  // vehicle no. only (keeps vehicle rows ordered per vehicle)
     totalAmount: number;
-    paidAmount: number;
-    remainingAmount: number;
     count: number;
 }
+
+interface CategorySection {
+    category: string;
+    rows: SummaryRow[];
+    total: number;
+    count: number;
+    startNo: number;  // Sr.# continues across sections
+}
+
+/**
+ * Section order on the sheet (same as the client's old software):
+ * Employees → Diesel/Fuel → Vehicle → Office → Godown → any other category.
+ * Categories are user-defined, so they are matched by keyword.
+ */
+const CATEGORY_ORDER: RegExp[] = [
+    /employee|staff|salar|labou?r|driver/i,
+    /fuel|diesel|petrol/i,
+    /vehicle/i,
+    /office/i,
+    /godown/i,
+];
+
+const categoryRank = (name: string): number => {
+    const idx = CATEGORY_ORDER.findIndex((rx) => rx.test(name));
+    return idx === -1 ? CATEGORY_ORDER.length : idx;
+};
+
+/** Designation written in brackets at the end of a name: "Gulshan (Driver)" → "DRIVER". Keeps drivers / labour together. */
+const roleTag = (name: string): string => (name.match(/\(([^)]*)\)\s*$/)?.[1] || "").trim().toUpperCase();
+
+const normKey = (s?: string): string => String(s || "").trim().replace(/\s+/g, " ").toUpperCase();
+
+/** Styles used for Print / Download PDF (Tailwind classes are not available there). */
+const REPORT_CSS = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 24px 30px; font-size: 11px; }
+    @page { size: A4 portrait; margin: 12mm 15mm; }
+    .header-title-row { text-align: center; position: relative; margin-bottom: 12px; }
+    .header-title { font-size: 16px; font-weight: bold; text-decoration: underline; text-transform: uppercase; }
+    .print-date { position: absolute; right: 0; top: 0; font-size: 10px; font-weight: bold; }
+    .meta-box { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
+    .meta-left { display: flex; flex-direction: column; gap: 4px; }
+    .meta-row { font-size: 11px; }
+    .meta-label { font-weight: bold; display: inline-block; min-width: 60px; }
+    .meta-val { font-weight: bold; }
+    .meta-right { font-weight: bold; font-size: 11px; }
+    .date-underline { text-decoration: underline; margin: 0 4px; }
+    .table-head { display: flex; font-weight: bold; font-size: 11px; border-bottom: 1.5px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+    .col-sr { flex: 0.6; text-align: center; }
+    .col-type { flex: 3.4; text-align: left; text-transform: uppercase; }
+    .col-target { flex: 2.4; text-align: left; text-transform: uppercase; }
+    .col-count { flex: 1; text-align: center; }
+    .col-amt { flex: 2.0; text-align: right; }
+    .section-block { margin-bottom: 12px; }
+    .section-head { font-weight: bold; font-size: 11.5px; text-transform: uppercase; text-decoration: underline; margin: 6px 0 3px; }
+    .item-row { display: flex; padding: 3px 0; font-size: 10.5px; border-bottom: 1px dashed #e5e7eb; }
+    .section-total { display: flex; justify-content: flex-end; gap: 24px; border-top: 1px solid #777; padding-top: 3px; margin-top: 2px; font-weight: bold; font-size: 11px; page-break-inside: avoid; break-inside: avoid; }
+    .section-total-amt { min-width: 120px; text-align: right; }
+    .subtotal-box { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; border-top: 1px solid #777; padding-top: 5px; margin-top: 10px; font-size: 11px; font-weight: bold; }
+    .subtotal-row { display: flex; justify-content: space-between; width: 300px; }
+    .party-total-box { display: flex; justify-content: flex-end; align-items: center; gap: 30px; border-top: 1.5px solid #000; padding-top: 8px; margin-top: 12px; font-weight: bold; font-size: 12px; page-break-inside: avoid; break-inside: avoid; }
+    .sign-section { display: flex; justify-content: space-between; margin-top: 45px; padding-top: 10px; page-break-inside: avoid; break-inside: avoid; }
+    .sign-col { width: 170px; text-align: center; border-top: 1px dashed #000; padding-top: 4px; font-size: 10px; font-weight: bold; }
+`;
 
 interface ExpenseLedgerModalProps {
     isOpen: boolean;
@@ -187,78 +247,78 @@ export default function ExpenseLedgerModal({
         }
     };
 
-    // Merge expenses by type+vehicle or type+person
-    const mergedExpenses = useMemo((): MergedExpense[] => {
-        const groups = new Map<string, ExpenseItem[]>();
+    // Summary sheet: category-wise sections, one line per expense type + vehicle/person.
+    // Remarks / routes are NOT shown here — they stay on the individual entry page.
+    const sections = useMemo((): CategorySection[] => {
+        const byCategory = new Map<string, { category: string; rows: Map<string, SummaryRow> }>();
 
         for (const e of reportExpenses) {
-            const isVehicle = e.category === "Vehicle Expense";
-            const key = isVehicle
-                ? `${e.expenseType}||${e.vehicleNo || ""}`
-                : `${e.expenseType}||${e.amountGivenTo || ""}`;
+            const catKey = normKey(e.category);
+            let section = byCategory.get(catKey);
+            if (!section) {
+                section = { category: (e.category || "Other").trim(), rows: new Map() };
+                byCategory.set(catKey, section);
+            }
 
-            const existing = groups.get(key);
-            if (existing) {
-                existing.push(e);
+            const vehicle = (e.vehicleNo || "").trim();
+            const target = vehicle || (e.amountGivenTo || "").trim();
+            // Rows are merged inside their own category only, so "Other" under Vehicle Expense
+            // never lands in "Other" under Office Expense.
+            const rowKey = `${normKey(e.expenseType)}||${normKey(target)}`;
+            const amount = Number(e.totalAmount) || 0;
+
+            const row = section.rows.get(rowKey);
+            if (row) {
+                row.totalAmount += amount;
+                row.count += 1;
             } else {
-                groups.set(key, [e]);
+                section.rows.set(rowKey, {
+                    key: `${catKey}||${rowKey}`,
+                    expenseType: (e.expenseType || "").trim(),
+                    target,
+                    vehicle,
+                    totalAmount: amount,
+                    count: 1,
+                });
             }
         }
 
-        const result: MergedExpense[] = [];
-        for (const [key, items] of groups) {
-            const totalAmount = items.reduce((s, i) => s + (i.totalAmount || 0), 0);
-            const paidAmount = items.reduce((s, i) => s + (i.paidAmount || 0), 0);
-            const remainingAmount = totalAmount - paidAmount;
+        const listOrder = (name: string) => {
+            const i = categoriesList.findIndex((c) => normKey(c) === normKey(name));
+            return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+        };
 
-            const dates = items.map((i) => i.date).sort();
-            const dateFrom = dates[0];
-            const dateTo = dates[dates.length - 1];
+        const result = [...byCategory.values()]
+            .map(({ category, rows }) => {
+                const list = [...rows.values()].sort((a, b) =>
+                    a.vehicle.localeCompare(b.vehicle) ||
+                    roleTag(a.expenseType).localeCompare(roleTag(b.expenseType)) ||
+                    a.expenseType.localeCompare(b.expenseType, undefined, { sensitivity: "base" }) ||
+                    a.target.localeCompare(b.target)
+                );
+                return {
+                    category,
+                    rows: list,
+                    total: list.reduce((s, r) => s + r.totalAmount, 0),
+                    count: list.reduce((s, r) => s + r.count, 0),
+                    startNo: 0,
+                };
+            })
+            .sort((a, b) =>
+                categoryRank(a.category) - categoryRank(b.category) ||
+                listOrder(a.category) - listOrder(b.category) ||
+                a.category.localeCompare(b.category)
+            );
 
-            const distinctRoutes = [
-                ...new Set(
-                    items
-                        .flatMap((i) => [
-                            i.route || "",
-                            i.driverName ? `Dr: ${i.driverName}` : "",
-                            i.remarks || "",
-                        ])
-                        .filter(Boolean)
-                ),
-            ].join(" • ");
-
-            const first = items[0];
-            result.push({
-                key,
-                dateFrom,
-                dateTo,
-                category: first.category,
-                expenseType: first.expenseType,
-                target: first.vehicleNo || first.amountGivenTo || "—",
-                routes: distinctRoutes || "—",
-                totalAmount,
-                paidAmount,
-                remainingAmount,
-                count: items.length,
-            });
+        let n = 0;
+        for (const sec of result) {
+            sec.startNo = n;
+            n += sec.rows.length;
         }
-
-        result.sort((a, b) => (a.dateFrom > b.dateFrom ? 1 : a.dateFrom < b.dateFrom ? -1 : 0));
         return result;
-    }, [reportExpenses]);
+    }, [reportExpenses, categoriesList]);
 
-    // Calculate totals
-    const grandTotal = useMemo(
-        () => mergedExpenses.reduce((s, e) => s + e.totalAmount, 0),
-        [mergedExpenses]
-    );
-    const categoryTotals = useMemo(() => {
-        const map: Record<string, number> = {};
-        for (const e of mergedExpenses) {
-            map[e.category] = (map[e.category] || 0) + e.totalAmount;
-        }
-        return map;
-    }, [mergedExpenses]);
+    const grandTotal = useMemo(() => sections.reduce((s, sec) => s + sec.total, 0), [sections]);
 
     const handleDownloadPDF = async () => {
         setIsDownloading(true);
@@ -274,36 +334,7 @@ export default function ExpenseLedgerModal({
 <head>
   <meta charset="UTF-8" />
   <title>Expense Ledger Sheet</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 24px 30px; font-size: 11px; }
-    @page { size: A4 portrait; margin: 12mm 15mm; }
-    .header-title-row { text-align: center; position: relative; margin-bottom: 12px; }
-    .header-title { font-size: 16px; font-weight: bold; text-decoration: underline; text-transform: uppercase; }
-    .print-date { position: absolute; right: 0; top: 0; font-size: 10px; font-weight: bold; }
-    .meta-box { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
-    .meta-left { display: flex; flex-direction: column; gap: 4px; }
-    .meta-row { font-size: 11px; }
-    .meta-label { font-weight: bold; display: inline-block; min-width: 60px; }
-    .meta-val { font-weight: bold; }
-    .meta-right { font-weight: bold; font-size: 11px; }
-    .date-underline { text-decoration: underline; margin: 0 4px; }
-    .table-head { display: flex; font-weight: bold; font-size: 11px; border-bottom: 1.5px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
-    .col-sr { flex: 0.6; text-align: center; }
-    .col-date { flex: 1.4; text-align: left; }
-    .col-cat { flex: 1.6; text-align: left; }
-    .col-type { flex: 2.2; text-align: left; }
-    .col-target { flex: 1.8; text-align: left; }
-    .col-remarks { flex: 3.2; text-align: left; }
-    .col-amt { flex: 2.0; text-align: right; }
-    .item-row { display: flex; padding: 3px 0; font-size: 10.5px; border-bottom: 1px dashed #e5e7eb; }
-    .item-row:last-child { border-bottom: none; }
-    .subtotal-box { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; border-top: 1px solid #777; padding-top: 5px; margin-top: 10px; font-size: 11px; font-weight: bold; }
-    .subtotal-row { display: flex; justify-content: space-between; width: 300px; }
-    .party-total-box { display: flex; justify-content: flex-end; align-items: center; gap: 30px; border-top: 1.5px solid #000; padding-top: 8px; margin-top: 12px; font-weight: bold; font-size: 12px; page-break-inside: avoid; break-inside: avoid; }
-    .sign-section { display: flex; justify-content: space-between; margin-top: 45px; padding-top: 10px; page-break-inside: avoid; break-inside: avoid; }
-    .sign-col { width: 170px; text-align: center; border-top: 1px dashed #000; padding-top: 4px; font-size: 10px; font-weight: bold; }
-  </style>
+  <style>${REPORT_CSS}</style>
 </head>
 <body>
   ${printArea.innerHTML}
@@ -347,36 +378,7 @@ export default function ExpenseLedgerModal({
 <head>
   <meta charset="UTF-8" />
   <title>Expense Ledger Sheet</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 24px 30px; font-size: 11px; }
-    @page { size: A4 portrait; margin: 12mm 15mm; }
-    .header-title-row { text-align: center; position: relative; margin-bottom: 12px; }
-    .header-title { font-size: 16px; font-weight: bold; text-decoration: underline; text-transform: uppercase; }
-    .print-date { position: absolute; right: 0; top: 0; font-size: 10px; font-weight: bold; }
-    .meta-box { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
-    .meta-left { display: flex; flex-direction: column; gap: 4px; }
-    .meta-row { font-size: 11px; }
-    .meta-label { font-weight: bold; display: inline-block; min-width: 60px; }
-    .meta-val { font-weight: bold; }
-    .meta-right { font-weight: bold; font-size: 11px; }
-    .date-underline { text-decoration: underline; margin: 0 4px; }
-    .table-head { display: flex; font-weight: bold; font-size: 11px; border-bottom: 1.5px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
-    .col-sr { flex: 0.6; text-align: center; }
-    .col-date { flex: 1.4; text-align: left; }
-    .col-cat { flex: 1.6; text-align: left; }
-    .col-type { flex: 2.2; text-align: left; }
-    .col-target { flex: 1.8; text-align: left; }
-    .col-remarks { flex: 3.2; text-align: left; }
-    .col-amt { flex: 2.0; text-align: right; }
-    .item-row { display: flex; padding: 3px 0; font-size: 10.5px; border-bottom: 1px dashed #e5e7eb; }
-    .item-row:last-child { border-bottom: none; }
-    .subtotal-box { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; border-top: 1px solid #777; padding-top: 5px; margin-top: 10px; font-size: 11px; font-weight: bold; }
-    .subtotal-row { display: flex; justify-content: space-between; width: 300px; }
-    .party-total-box { display: flex; justify-content: flex-end; align-items: center; gap: 30px; border-top: 1.5px solid #000; padding-top: 8px; margin-top: 12px; font-weight: bold; font-size: 12px; page-break-inside: avoid; break-inside: avoid; }
-    .sign-section { display: flex; justify-content: space-between; margin-top: 45px; padding-top: 10px; page-break-inside: avoid; break-inside: avoid; }
-    .sign-col { width: 170px; text-align: center; border-top: 1px dashed #000; padding-top: 4px; font-size: 10px; font-weight: bold; }
-  </style>
+  <style>${REPORT_CSS}</style>
 </head>
 <body>
   ${printArea.innerHTML}
@@ -591,49 +593,49 @@ export default function ExpenseLedgerModal({
                                         {/* 3. Table Column Headers */}
                                         <div className="table-head flex items-center font-bold text-xs sm:text-[13px] text-gray-950 border-b-2 border-black pb-1.5 mb-3 font-sans">
                                             <div className="col-sr flex-[0.6] text-center">Sr.#</div>
-                                            <div className="col-date flex-[1.4] text-left">Date</div>
-                                            <div className="col-cat flex-[1.6] text-left">Category</div>
-                                            <div className="col-type flex-[2.2] text-left">Expense Type</div>
-                                            <div className="col-target flex-[1.8] text-left">Vehicle / Person</div>
-                                            <div className="col-remarks flex-[3.2] text-left">Route / Remarks</div>
+                                            <div className="col-type flex-[3.4] text-left">Expense Type</div>
+                                            <div className="col-target flex-[2.4] text-left">Vehicle / Person</div>
+                                            <div className="col-count flex-1 text-center">Entries</div>
                                             <div className="col-amt flex-[2.0] text-right">Amount</div>
                                         </div>
 
-                                        {/* 4. Items List */}
-                                        <div className="expenses-container space-y-1">
-                                            {mergedExpenses.length > 0 ? (
-                                                mergedExpenses.map((item, idx) => (
-                                                    <div
-                                                        key={item.key}
-                                                        className="item-row flex items-center text-xs sm:text-[12px] text-gray-900 font-sans leading-relaxed hover:bg-gray-50/60 print:hover:bg-transparent"
-                                                    >
-                                                        <div className="col-sr flex-[0.6] text-center font-medium text-gray-500">
-                                                            {String(idx + 1).padStart(2, "0")}
+                                        {/* 4. Category-wise sections (Employees first, then Fuel, Vehicle, Office, Godown...) */}
+                                        <div className="expenses-container space-y-4">
+                                            {sections.length > 0 ? (
+                                                sections.map((sec) => (
+                                                    <div key={sec.category} className="section-block">
+                                                        <div className="section-head text-xs sm:text-[13px] font-black uppercase tracking-wide underline text-gray-950 font-sans mb-1">
+                                                            {sec.category}
                                                         </div>
-                                                        <div className="col-date flex-[1.4] text-left font-medium">
-                                                            {item.dateFrom === item.dateTo
-                                                                ? formatDateDMY(item.dateFrom)
-                                                                : `${formatDateDMY(item.dateFrom)} – ${formatDateDMY(item.dateTo)}`}
-                                                            {item.count > 1 && (
-                                                                <span className="ml-1 text-[9px] font-bold text-gray-400 print:inline">
-                                                                    ({item.count})
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-cat flex-[1.6] text-left font-medium uppercase truncate pr-1">
-                                                            {item.category}
-                                                        </div>
-                                                        <div className="col-type flex-[2.2] text-left font-bold uppercase truncate pr-1">
-                                                            {item.expenseType}
-                                                        </div>
-                                                        <div className="col-target flex-[1.8] text-left uppercase font-medium truncate pr-1">
-                                                            {item.target}
-                                                        </div>
-                                                        <div className="col-remarks flex-[3.2] text-left font-medium text-gray-700 truncate pr-1">
-                                                            {item.routes}
-                                                        </div>
-                                                        <div className="col-amt flex-[2.0] text-right font-bold">
-                                                            {fmtMoney(item.totalAmount)}
+                                                        {sec.rows.map((item, idx) => (
+                                                            <div
+                                                                key={item.key}
+                                                                className="item-row flex items-center text-xs sm:text-[12px] text-gray-900 font-sans leading-relaxed border-b border-dashed border-gray-200 hover:bg-gray-50/60 print:hover:bg-transparent"
+                                                            >
+                                                                <div className="col-sr flex-[0.6] text-center font-medium text-gray-500">
+                                                                    {String(sec.startNo + idx + 1).padStart(2, "0")}
+                                                                </div>
+                                                                <div className="col-type flex-[3.4] text-left font-bold uppercase truncate pr-1">
+                                                                    {item.expenseType || "—"}
+                                                                </div>
+                                                                <div className="col-target flex-[2.4] text-left uppercase font-medium truncate pr-1">
+                                                                    {item.target || "—"}
+                                                                </div>
+                                                                <div className="col-count flex-1 text-center font-medium text-gray-500">
+                                                                    {item.count}
+                                                                </div>
+                                                                <div className="col-amt flex-[2.0] text-right font-bold">
+                                                                    {fmtMoney(item.totalAmount)}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        <div className="section-total flex justify-end items-center gap-6 border-t border-gray-500 pt-1 mt-1 text-xs sm:text-[13px] font-bold text-gray-950 font-sans">
+                                                            <span>
+                                                                {sec.category} Total ({sec.count} {sec.count === 1 ? "entry" : "entries"}):
+                                                            </span>
+                                                            <span className="section-total-amt min-w-[120px] text-right">
+                                                                {fmtMoney(sec.total)}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 ))
@@ -644,20 +646,20 @@ export default function ExpenseLedgerModal({
                                             )}
                                         </div>
 
-                                        {/* Subtotals breakdown */}
-                                        {mergedExpenses.length > 0 && (
+                                        {/* Category totals recap (same order as the sections) */}
+                                        {sections.length > 0 && (
                                             <div className="subtotal-box">
-                                                {Object.entries(categoryTotals).map(([catName, sum]) => (
-                                                    <div key={catName} className="subtotal-row">
-                                                        <span>{catName}:</span>
-                                                        <span>{fmtMoney(sum)}</span>
+                                                {sections.map((sec) => (
+                                                    <div key={sec.category} className="subtotal-row">
+                                                        <span>{sec.category}:</span>
+                                                        <span>{fmtMoney(sec.total)}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
 
                                         {/* 5. Grand Total Footer */}
-                                        {mergedExpenses.length > 0 && (
+                                        {sections.length > 0 && (
                                             <div className="party-total-box flex justify-end items-center gap-6 border-t-2 border-black pt-3 mt-4 text-xs sm:text-sm font-black text-gray-950 font-sans break-inside-avoid">
                                                 <span className="tracking-wide uppercase">Grand Total Expense:</span>
                                                 <span className="text-right min-w-[140px] font-black text-sm sm:text-base">

@@ -2,27 +2,43 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Invoice from '@/models/Invoice';
 import LedgerEntry from '@/models/LedgerEntry';
-import { invoiceLedgerMeta, parseLedgerDate } from '@/lib/ledgerRules';
+import { invoiceLedgerMeta, parseLedgerDate, invoiceBillDate, escapeRegex, exactNameRegex } from '@/lib/ledgerRules';
 
 export async function GET(request: NextRequest) {
     try {
         await dbConnect();
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
+        // Exact party name (used by the bills summary) — must match the ledger's party, not a substring
+        const party = searchParams.get('party') || '';
         const type = searchParams.get('type') || 'All';
         const startDate = searchParams.get('startDate') || '';
         const endDate = searchParams.get('endDate') || '';
         const specificDate = searchParams.get('date') || '';
 
         let query: any = {};
+        const conditions: any[] = [];
 
-        if (search) {
-            query.$or = [
-                { invoiceNo: { $regex: search, $options: 'i' } },
-                { clientName: { $regex: search, $options: 'i' } },
-                { partyName: { $regex: search, $options: 'i' } },
-            ];
+        if (search.trim()) {
+            // Escape so names like "FARAZ (PROGRESSIVE)" or "DANISH BHAI K+N" are matched literally
+            const rx = new RegExp(escapeRegex(search.trim()), 'i');
+            conditions.push({ $or: [{ invoiceNo: rx }, { clientName: rx }, { partyName: rx }] });
         }
+
+        if (party.trim()) {
+            // Same party resolution as the ledger: OT bills → partyName (fallback clientName), TT bills → clientName
+            const rx = exactNameRegex(party);
+            conditions.push({
+                $or: [
+                    { type: { $ne: 'allocation' }, clientName: rx },
+                    { type: 'allocation', partyName: rx },
+                    { type: 'allocation', partyName: { $in: [null, ''] }, clientName: rx },
+                ],
+            });
+        }
+
+        if (conditions.length === 1) query = { ...conditions[0] };
+        else if (conditions.length > 1) query.$and = conditions;
 
         if (type !== 'All') {
             const normalizedType = type.toLowerCase();
@@ -39,11 +55,12 @@ export async function GET(request: NextRequest) {
 
         if (startDate && endDate) {
             const startD = new Date(`${startDate}T00:00:00`);
-            const endD = new Date(`${endDate}T23:59:59`);
+            const endD = new Date(`${endDate}T23:59:59.999`);
+            // Filter by the bill's own date only (same date the ledger uses).
+            // Bills entered later (e.g. July bills created in October) must stay in July.
             invoices = invoices.filter(inv => {
-                const d = parseLedgerDate(inv.billingDate || inv.invoiceDate || inv.createdAt);
-                const createdD = inv.createdAt ? new Date(inv.createdAt) : null;
-                return (d >= startD && d <= endD) || (createdD && createdD >= startD && createdD <= endD);
+                const d = invoiceBillDate(inv);
+                return d >= startD && d <= endD;
             });
         } else if (specificDate) {
             invoices = invoices.filter(inv => {
@@ -53,8 +70,8 @@ export async function GET(request: NextRequest) {
 
         const sortOrder = searchParams.get('sort') || 'desc';
         invoices.sort((a, b) => {
-            const dateA = parseLedgerDate(a.billingDate || a.invoiceDate || a.createdAt).getTime();
-            const dateB = parseLedgerDate(b.billingDate || b.invoiceDate || b.createdAt).getTime();
+            const dateA = invoiceBillDate(a).getTime();
+            const dateB = invoiceBillDate(b).getTime();
             if (sortOrder === 'asc') {
                 return dateA - dateB || String(a.invoiceNo || '').localeCompare(String(b.invoiceNo || ''));
             }

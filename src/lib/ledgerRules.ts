@@ -86,3 +86,34 @@ export function parseLedgerDate(dateVal: any, fallback?: Date): Date {
     const parsed = new Date(str);
     return isNaN(parsed.getTime()) ? fb : parsed;
 }
+
+/**
+ * The date a bill belongs to: billing date → invoice date → created date.
+ * Same rule the ledger uses, so invoice list, ledger and bills summary agree.
+ */
+export function invoiceBillDate(inv: { billingDate?: unknown; invoiceDate?: unknown; createdAt?: unknown }): Date {
+    const created = inv?.createdAt ? new Date(inv.createdAt as string | number | Date) : undefined;
+    return parseLedgerDate(inv?.billingDate || inv?.invoiceDate || inv?.createdAt, created);
+}
+
+/** Escape user text so it can be used literally inside a RegExp. */
+export function escapeRegex(s: string): string {
+    return String(s ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Case-insensitive exact party-name match, tolerant of extra spaces.
+ * "FARAZ (PROGRESSIVE)" matches only that party — not "FARAZ" or "CASH (PARTY) CC LOGISTIC".
+ */
+export function exactNameRegex(name: string): RegExp {
+    const words = String(name ?? '').trim().split(/\s+/).filter(Boolean).map(escapeRegex);
+    return new RegExp(`^\\s*${words.join('\\s+')}\\s*$`, 'i');
+}
+
+/** Local calendar date as YYYY-MM-DD (avoids the UTC shift of toISOString in Pakistan time). */
+export function toLocalYMD(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
