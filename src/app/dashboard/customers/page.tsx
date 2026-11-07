@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -16,6 +16,7 @@ import {
     MapPin,
     FileText,
     TrendingUp,
+    FileSpreadsheet,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import CustomDatePicker from "@/components/CustomDatePicker";
@@ -23,7 +24,9 @@ import DeleteModal from "@/components/DeleteModal";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
 import ReportModal from "@/components/customers/ReportModal";
+import PartyBillsSummaryModal from "@/components/invoices/PartyBillsSummaryModal";
 import { toLocalYMD } from "@/lib/ledgerRules";
+import { assignPartyCodes, normalizePartyName, type PartyBillsRow, type PartyBillsSummary } from "@/lib/partySummary";
 import { useAuth } from "@/context/AuthContext";
 
 interface Customer {
@@ -56,18 +59,49 @@ export default function CustomersPage() {
     // Report state
     const [reportCustomer, setReportCustomer] = useState<{ id: string; name: string; code?: string } | null>(null);
 
+    // Bills summary for the selected From/To period (TT bills per customer)
+    const [periodSummary, setPeriodSummary] = useState<PartyBillsSummary | null>(null);
+    const [isPeriodLoading, setIsPeriodLoading] = useState(false);
+    const [periodError, setPeriodError] = useState("");
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+    const isPeriodActive = !!(startDate && endDate);
+
     useEffect(() => {
         fetchCustomers();
+    }, []);
+
+    // From/To filters customers by the bills they have in that period (not by registration date)
+    useEffect(() => {
+        if (!startDate || !endDate) {
+            setPeriodSummary(null);
+            setPeriodError("");
+            return;
+        }
+        const controller = new AbortController();
+        const params = new URLSearchParams({ type: "customer", startDate: toLocalYMD(startDate), endDate: toLocalYMD(endDate) });
+        setIsPeriodLoading(true);
+        setPeriodError("");
+        fetch(`/api/invoices/summary?${params.toString()}`, { signal: controller.signal })
+            .then(async (res) => {
+                const json = await res.json().catch(() => null);
+                if (!res.ok || !json?.success) throw new Error(json?.error || "Failed to load bills for this period");
+                setPeriodSummary(json.data as PartyBillsSummary);
+            })
+            .catch((err: unknown) => {
+                if (controller.signal.aborted) return;
+                setPeriodSummary(null);
+                setPeriodError(err instanceof Error ? err.message : "Failed to load bills for this period");
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) setIsPeriodLoading(false);
+            });
+        return () => controller.abort();
     }, [startDate, endDate]);
 
     const fetchCustomers = async () => {
         setIsLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (startDate) params.set("startDate", toLocalYMD(startDate));
-            if (endDate) params.set("endDate", toLocalYMD(endDate));
-            
-            const res = await fetch(`/api/customers?${params.toString()}`);
+            const res = await fetch("/api/customers");
             const data = await res.json();
             if (data.success) {
                 setCustomers(data.data);
@@ -102,20 +136,32 @@ export default function CustomersPage() {
         }
     };
 
-    const handleGenerateReport = (startDate: Date, endDate: Date) => {
-        if (!reportCustomer) return;
-        const startStr = toLocalYMD(startDate);
-        const endStr = toLocalYMD(endDate);
-        router.push(`/dashboard/invoices?search=${encodeURIComponent(reportCustomer.name)}&startDate=${startStr}&endDate=${endStr}`);
-    };
+    // Stable customer codes (registration order) — same codes as the bills summary
+    const customerCodes = useMemo(
+        () => assignPartyCodes(customers.map((c) => ({ _id: c._id, name: c.customerName, createdAt: c.createdAt }))),
+        [customers]
+    );
+
+    const periodByName = useMemo(() => {
+        const map = new Map<string, PartyBillsRow>();
+        for (const row of periodSummary?.rows ?? []) map.set(normalizePartyName(row.partyName), row);
+        return map;
+    }, [periodSummary]);
+
+    const periodRowOf = (c: Customer) => periodByName.get(normalizePartyName(c.customerName));
+    const codeOf = (c: Customer) => String(customerCodes.get(c._id) ?? "");
 
     const filtered = customers.filter((c) => {
-        return (
-            c.customerName.toLowerCase().includes(search.toLowerCase()) ||
+        const q = search.toLowerCase();
+        const matchSearch =
+            c.customerName.toLowerCase().includes(q) ||
             c.mobileNo.includes(search) ||
-            c.email.toLowerCase().includes(search.toLowerCase())
-        );
+            c.email.toLowerCase().includes(q);
+        // With a period selected, show only customers who have bills in it
+        return matchSearch && (!isPeriodActive || !!periodRowOf(c));
     });
+
+    const showSkeleton = isLoading || (isPeriodActive && isPeriodLoading);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -269,17 +315,43 @@ export default function CustomersPage() {
                         )}
                     </div>
 
-                    <div className="ml-auto text-sm text-gray-400 shrink-0">
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        onClick={() => setIsSummaryOpen(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-gray-700 text-xs sm:text-sm font-bold shadow-sm hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer shrink-0"
+                        title="Party-wise bills summary for the selected dates"
+                    >
+                        <FileSpreadsheet size={15} />
+                        <span>Bills Summary</span>
+                    </motion.button>
+
+                    <div className="ml-auto text-sm text-gray-400 shrink-0 text-right">
                         <span className="font-bold text-gray-700">{filtered.length}</span> results
+                        {isPeriodActive && periodSummary && !isPeriodLoading && (
+                            <p className="text-xs font-semibold text-gray-500 mt-0.5">
+                                {periodSummary.totalBills} bills &bull; Rs. {periodSummary.totalAmount.toLocaleString("en-US")}
+                            </p>
+                        )}
                     </div>
                 </div>
+
+                {periodError && (
+                    <div className="px-4 md:px-6 py-2.5 bg-red-50 border-b border-red-100 text-xs font-bold text-red-600">
+                        {periodError}
+                    </div>
+                )}
 
                 {/* ── Desktop Table ── */}
                 <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-gray-100">
-                                {["Sr. #", "Customer Name", "Contact Details", "Address", "Ref Person", "Action"].map((h) => (
+                                {(isPeriodActive
+                                    ? ["Sr. #", "Customer Name", "Bills", "Amount", "Contact Details", "Address", "Ref Person", "Action"]
+                                    : ["Sr. #", "Customer Name", "Contact Details", "Address", "Ref Person", "Action"]
+                                ).map((h) => (
                                     <th
                                         key={h}
                                         className="px-6 py-3.5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
@@ -290,7 +362,7 @@ export default function CustomersPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {isLoading ? (
+                            {showSkeleton ? (
                                 [...Array(5)].map((_, idx) => (
                                     <tr key={`sk-${idx}`} className="animate-pulse border-b border-gray-50">
                                         <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-8"></div></td>
@@ -300,6 +372,12 @@ export default function CustomersPage() {
                                                 <div className="h-4 bg-gray-100 rounded w-24"></div>
                                             </div>
                                         </td>
+                                        {isPeriodActive && (
+                                            <>
+                                                <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-8"></div></td>
+                                                <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20"></div></td>
+                                            </>
+                                        )}
                                         <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-32"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20"></div></td>
@@ -313,10 +391,12 @@ export default function CustomersPage() {
                                 ))
                             ) : paginatedData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-16 text-center">
+                                    <td colSpan={isPeriodActive ? 8 : 6} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3 text-gray-400">
                                             <UserCircle2 size={40} className="opacity-20" />
-                                            <p className="text-sm font-medium">No customers found</p>
+                                            <p className="text-sm font-medium">
+                                                {isPeriodActive ? "No customer bills in the selected dates" : "No customers found"}
+                                            </p>
                                         </div>
                                     </td>
                                 </tr>
@@ -345,6 +425,16 @@ export default function CustomersPage() {
                                                 </p>
                                             </div>
                                         </td>
+                                        {isPeriodActive && (
+                                            <>
+                                                <td className="px-6 py-4 text-sm font-bold text-gray-700">
+                                                    {periodRowOf(c)?.billCount ?? 0}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
+                                                    Rs. {(periodRowOf(c)?.totalAmount ?? 0).toLocaleString("en-US")}
+                                                </td>
+                                            </>
+                                        )}
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col gap-0.5 min-w-max">
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
@@ -382,7 +472,7 @@ export default function CustomersPage() {
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setReportCustomer({ id: c._id, name: c.customerName, code: (filtered.indexOf(c) + 1).toString() })}
+                                                    onClick={() => setReportCustomer({ id: c._id, name: c.customerName, code: codeOf(c) })}
                                                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-bold cursor-pointer shadow-md"
                                                 >
                                                     <TrendingUp size={13} />
@@ -419,7 +509,7 @@ export default function CustomersPage() {
 
                 {/* ── Mobile Card List ── */}
                 <div className="md:hidden">
-                    {isLoading ? (
+                    {showSkeleton ? (
                         <div className="divide-y divide-gray-50">
                             {[...Array(5)].map((_, idx) => (
                                 <div key={`sk-mob-${idx}`} className="px-4 py-4 flex flex-col gap-3 animate-pulse">
@@ -459,6 +549,11 @@ export default function CustomersPage() {
                                                 {c.customerName}
                                             </p>
                                             <p className="text-xs text-gray-400 truncate">{c.mobileNo || "No contact"} &bull; {c.refPerson || "No ref"}</p>
+                                            {isPeriodActive && (
+                                                <p className="text-xs font-bold text-gray-700 mt-0.5">
+                                                    {periodRowOf(c)?.billCount ?? 0} bills &bull; Rs. {(periodRowOf(c)?.totalAmount ?? 0).toLocaleString("en-US")}
+                                                </p>
+                                            )}
                                         </div>
                                          <div className="flex flex-wrap items-center gap-2 mt-2 w-full">
                                         <motion.button
@@ -471,7 +566,7 @@ export default function CustomersPage() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => setReportCustomer({ id: c._id, name: c.customerName, code: (filtered.indexOf(c) + 1).toString() })}
+                                            onClick={() => setReportCustomer({ id: c._id, name: c.customerName, code: codeOf(c) })}
                                             className="flex-1 min-w-[100px] px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             <TrendingUp size={13} />
@@ -541,6 +636,14 @@ export default function CustomersPage() {
                 customerCode={reportCustomer?.code}
                 partyType="Customer"
                 onClose={() => setReportCustomer(null)}
+            />
+
+            <PartyBillsSummaryModal
+                isOpen={isSummaryOpen}
+                onClose={() => setIsSummaryOpen(false)}
+                partyType="Customer"
+                initialStartDate={startDate}
+                initialEndDate={endDate}
             />
         </div>
     );

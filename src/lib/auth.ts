@@ -11,6 +11,12 @@ export async function encrypt(payload: any) {
         .sign(key);
 }
 
+/** Session of the logged-in user from the auth cookie, or null. Use in API routes (middleware does not cover /api). */
+export async function getRequestSession(req: { cookies: { get(name: string): { value: string } | undefined } }) {
+    const token = req.cookies.get('auth_token')?.value;
+    return token ? decrypt(token) : null;
+}
+
 export async function decrypt(input: string): Promise<any> {
     try {
         const { payload } = await jwtVerify(input, key, {

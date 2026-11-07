@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -15,10 +15,13 @@ import {
     Trash2,
     Database,
     TrendingUp,
+    FileSpreadsheet,
 } from "lucide-react";
 import CustomDropdown from "@/components/CustomDropdown";
 import DeleteModal from "@/components/DeleteModal";
 import ReportModal from "@/components/customers/ReportModal";
+import PartyBillsSummaryModal from "@/components/invoices/PartyBillsSummaryModal";
+import { assignPartyCodes } from "@/lib/partySummary";
 import Loader from "@/components/Loader";
 import Pagination from "@/components/Pagination";
 import CustomMonthPicker from "@/components/CustomMonthPicker";
@@ -32,6 +35,7 @@ interface OutsiderMember {
     lastAllocation: string | null;
     lastAllocationDate: string | null;
     balanceStatus: string;
+    createdAt?: string;
 }
 
 const categoryOptions = [
@@ -87,6 +91,7 @@ export default function OutsiderPage() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [reportOutsider, setReportOutsider] = useState<{ id: string; name: string; code?: string } | null>(null);
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
     useEffect(() => {
         fetchOutsiders();
@@ -129,6 +134,12 @@ export default function OutsiderPage() {
             setIsDeleting(false);
         }
     };
+
+    const outsiderCodes = useMemo(
+        () => assignPartyCodes(outsiders.map((o) => ({ _id: o._id, name: o.outsiderName, createdAt: o.createdAt }))),
+        [outsiders]
+    );
+    const codeOf = (o: OutsiderMember) => String(outsiderCodes.get(o._id) ?? "");
 
     const filtered = outsiders.filter((o) => {
         const matchSearch =
@@ -193,6 +204,18 @@ export default function OutsiderPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        onClick={() => setIsSummaryOpen(true)}
+                        className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-gray-700 text-xs sm:text-sm font-bold shadow-sm hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer"
+                        title="Party-wise outsider bills summary"
+                    >
+                        <FileSpreadsheet size={15} />
+                        <span className="hidden sm:inline">Bills Summary</span>
+                        <span className="sm:hidden">Summary</span>
+                    </motion.button>
                     <motion.button
                         whileHover={{ scale: 1.03, boxShadow: "0 8px 25px rgba(128,0,0,0.25)" }}
                         whileTap={{ scale: 0.97 }}
@@ -462,7 +485,7 @@ export default function OutsiderPage() {
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setReportOutsider({ id: o._id, name: o.outsiderName, code: (filtered.indexOf(o) + 1).toString() })}
+                                                    onClick={() => setReportOutsider({ id: o._id, name: o.outsiderName, code: codeOf(o) })}
                                                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-bold cursor-pointer shadow-md min-w-[65px]"
                                                 >
                                                     <TrendingUp size={13} />
@@ -562,7 +585,7 @@ export default function OutsiderPage() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => setReportOutsider({ id: o._id, name: o.outsiderName, code: (filtered.indexOf(o) + 1).toString() })}
+                                            onClick={() => setReportOutsider({ id: o._id, name: o.outsiderName, code: codeOf(o) })}
                                             className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold flex-shrink-0 cursor-pointer shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             <TrendingUp size={13} />
@@ -623,6 +646,12 @@ export default function OutsiderPage() {
                 customerCode={reportOutsider?.code}
                 partyType="Outsider"
                 onClose={() => setReportOutsider(null)}
+            />
+
+            <PartyBillsSummaryModal
+                isOpen={isSummaryOpen}
+                onClose={() => setIsSummaryOpen(false)}
+                partyType="Outsider"
             />
         </div>
     );

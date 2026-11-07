@@ -96,6 +96,17 @@ export function invoiceBillDate(inv: { billingDate?: unknown; invoiceDate?: unkn
     return parseLedgerDate(inv?.billingDate || inv?.invoiceDate || inv?.createdAt, created);
 }
 
+/**
+ * The party a bill belongs to — same rule the ledger uses:
+ * OT bills (allocation) → partyName, falling back to clientName; TT bills → clientName.
+ */
+export function invoicePartyName(inv: { type?: unknown; partyName?: unknown; clientName?: unknown }): string {
+    const name = isOutsiderInvoice(String(inv?.type ?? ''))
+        ? (inv?.partyName || inv?.clientName)
+        : inv?.clientName;
+    return String(name ?? '').trim();
+}
+
 /** Escape user text so it can be used literally inside a RegExp. */
 export function escapeRegex(s: string): string {
     return String(s ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
