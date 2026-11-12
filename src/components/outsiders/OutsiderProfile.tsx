@@ -77,23 +77,19 @@ const OutsiderProfile = ({ outsiderId }: OutsiderProfileProps) => {
         setIsEditModalOpen(true);
     };
 
-    const handleSave = async (updatedData: any) => {
-        try {
-            const res = await fetch(`/api/outsiders/${outsiderId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedData),
-            });
-
-            if (res.ok) {
-                await fetchOutsider(); // Refresh data
-                setIsEditModalOpen(false);
-            } else {
-                console.error('Failed to update outsider');
-            }
-        } catch (error) {
-            console.error('Error updating outsider:', error);
+    const handleSave = async (updatedData: Record<string, unknown>) => {
+        const res = await fetch(`/api/outsiders/${outsiderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData),
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success) {
+            // Shown inside the edit modal (e.g. "Another outsider is already named ...")
+            throw new Error(json?.error || 'Failed to update outsider');
         }
+        await fetchOutsider(); // Refresh data (name changes also moved bills and ledger entries)
+        setIsEditModalOpen(false);
     };
 
     if (loading) return <Loader fullScreen />;

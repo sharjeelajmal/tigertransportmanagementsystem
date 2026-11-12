@@ -8,8 +8,13 @@ import Loader from "@/components/Loader";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import CustomDropdown from "@/components/CustomDropdown";
 import LedgerStats from "@/components/ledger/LedgerStats";
-import LedgerTransactions from "@/components/ledger/LedgerTransactions";
-import AddLedgerEntryModal from "@/components/ledger/AddLedgerEntryModal";
+import LedgerTransactions, { type LedgerRow } from "@/components/ledger/LedgerTransactions";
+import AddLedgerEntryModal, { type EditableLedgerEntry } from "@/components/ledger/AddLedgerEntryModal";
+import LedgerPartyOverview from "@/components/ledger/LedgerPartyOverview";
+import DeleteModal from "@/components/DeleteModal";
+import { useAuth } from "@/context/AuthContext";
+import { normalizePartyName } from "@/lib/partySummary";
+import type { PartyBalanceRow } from "@/lib/ledgerBalances";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,16 +26,7 @@ interface PartyOption {
 
 interface PartyLedgerData {
     partyName: string;
-    entries: {
-        _id: string;
-        date: string;
-        docNo: string;
-        narration: string;
-        entryType: "Debit" | "Credit";
-        debit: number;
-        credit: number;
-        balance: number;
-    }[];
+    entries: LedgerRow[];
     totalDebit: number;
     totalCredit: number;
     netBalance: number;
@@ -72,6 +68,7 @@ function formatDateLabel(d: string): string {
 
 export default function LedgerPage() {
     const router = useRouter();
+    const { isAdmin } = useAuth();
 
     // ── Party Selector ──────────────────────────────────────────────────────
     const [partyOptions, setPartyOptions] = useState<PartyOption[]>([]);
@@ -90,6 +87,10 @@ export default function LedgerPage() {
 
     // ── Modal ───────────────────────────────────────────────────────────────
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editEntry, setEditEntry] = useState<EditableLedgerEntry | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<LedgerRow | null>(null);
+    const [isDeletingEntry, setIsDeletingEntry] = useState(false);
+    const [actionError, setActionError] = useState("");
 
     // ════════════════════════════════════════════════════════════════════════
     // Load party options (Customers + Outsiders, de-duplicated by name)
@@ -185,6 +186,58 @@ export default function LedgerPage() {
         fetchLedger();
     }, [fetchLedger]);
 
+    // ── All-parties list → open one party's ledger ───────────────────────────
+    const handleShowLedger = (row: PartyBalanceRow) => {
+        const key = normalizePartyName(row.partyName);
+        let option = partyOptions.find((p) => normalizePartyName(p.value) === key);
+        if (!option) {
+            // Name exists only in the ledger (not registered) — make it selectable too
+            const added: PartyOption = { value: row.partyName, label: row.partyName, type: row.partyType };
+            setPartyOptions((prev) => [...prev, added].sort((a, b) => a.value.localeCompare(b.value)));
+            option = added;
+        }
+        setSelectedParty(option);
+        setStartDate("");
+        setEndDate("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    // ── Correct / delete manual entries (Cash Received / Cash Paid) ──────────
+    const openEditEntry = (row: LedgerRow) => {
+        setActionError("");
+        setEditEntry({
+            _id: row._id,
+            date: row.date,
+            docNo: row.docNo,
+            entryType: row.entryType,
+            amount: row.entryType === "Debit" ? row.debit : row.credit,
+        });
+        setIsModalOpen(true);
+    };
+
+    const closeEntryModal = () => {
+        setIsModalOpen(false);
+        setEditEntry(null);
+    };
+
+    const confirmDeleteEntry = async () => {
+        if (!deleteTarget) return;
+        setIsDeletingEntry(true);
+        setActionError("");
+        try {
+            const res = await fetch(`/api/ledger/entries/${deleteTarget._id}`, { method: "DELETE" });
+            const json = await res.json().catch(() => null);
+            if (!res.ok || !json?.success) throw new Error(json?.error || "Failed to delete entry");
+            setDeleteTarget(null);
+            await fetchLedger();
+        } catch (err) {
+            setDeleteTarget(null);
+            setActionError(err instanceof Error ? err.message : "Failed to delete entry");
+        } finally {
+            setIsDeletingEntry(false);
+        }
+    };
+
     // ── Derived filtered general transactions ────────────────────────────────
     const filteredTransactions =
         generalData?.transactions?.filter(
@@ -253,8 +306,9 @@ export default function LedgerPage() {
             >
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => (selectedParty ? setSelectedParty(null) : router.back())}
                         className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                        title={selectedParty ? "Back to all parties" : "Back"}
                     >
                         <ArrowLeft size={18} />
                     </button>
@@ -419,6 +473,12 @@ export default function LedgerPage() {
                                 exit={{ opacity: 0, y: -12 }}
                                 className="space-y-5"
                             >
+                                {actionError && (
+                                    <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 print:hidden">
+                                        {actionError}
+                                    </div>
+                                )}
+
                                 {/* Stats */}
                                 <LedgerStats
                                     mode="party"
@@ -457,7 +517,12 @@ export default function LedgerPage() {
                                         </button>
                                     </motion.div>
                                 ) : (
-                                    <LedgerTransactions mode="party" entries={partyData.entries} />
+                                    <LedgerTransactions
+                                        mode="party"
+                                        entries={partyData.entries}
+                                        onEdit={openEditEntry}
+                                        onDelete={isAdmin ? setDeleteTarget : undefined}
+                                    />
                                 )}
                             </motion.div>
                         </AnimatePresence>
@@ -483,6 +548,9 @@ export default function LedgerPage() {
                                         totalPayables: generalData.totalPayables,
                                     }}
                                 />
+
+                                {/* All parties: debit, credit, balance — "kis se lena hai, kis ko dena hai" */}
+                                <LedgerPartyOverview onShowLedger={handleShowLedger} />
 
                                 {/* Cash Flow Breakdown */}
                                 <motion.div
@@ -518,12 +586,26 @@ export default function LedgerPage() {
             {selectedParty && (
                 <AddLedgerEntryModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={closeEntryModal}
                     onSuccess={fetchLedger}
                     partyName={selectedParty.value}
                     partyType={selectedParty.type}
+                    editEntry={editEntry}
                 />
             )}
+
+            <DeleteModal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDeleteEntry}
+                isDeleting={isDeletingEntry}
+                title="Delete Ledger Entry"
+                description={
+                    deleteTarget
+                        ? `${deleteTarget.narration} of Rs. ${(deleteTarget.debit || deleteTarget.credit).toLocaleString()} (${deleteTarget.docNo}) will be permanently removed from this ledger.`
+                        : ""
+                }
+            />
         </div>
     );
 }

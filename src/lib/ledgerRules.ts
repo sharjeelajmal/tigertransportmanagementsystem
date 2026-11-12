@@ -121,6 +121,36 @@ export function exactNameRegex(name: string): RegExp {
     return new RegExp(`^\\s*${words.join('\\s+')}\\s*$`, 'i');
 }
 
+/*
+ * Ledger dates are calendar dates stored as 00:00 UTC of that day
+ * (e.g. 14 July → 2026-07-14T00:00:00.000Z). They must be shown with UTC components;
+ * converting them to the viewer's timezone shows the previous day on PCs behind UTC.
+ */
+const YMD_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** "2026-07-14" → 2026-07-14T00:00:00.000Z, or null if not a real calendar date. */
+export function ymdToLedgerDate(ymd: string): Date | null {
+    const m = YMD_RE.exec(String(ymd ?? '').trim());
+    if (!m) return null;
+    const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const date = new Date(Date.UTC(y, mo - 1, d));
+    return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d ? date : null;
+}
+
+/** Stored ledger date → "YYYY-MM-DD" (UTC calendar day). */
+export function ledgerDateToYMD(value: string | Date): string {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** Stored ledger date → "14 Jul 2026", same day on every PC regardless of its timezone. */
+export function formatLedgerDate(value: string | Date): string {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 /** Local calendar date as YYYY-MM-DD (avoids the UTC shift of toISOString in Pakistan time). */
 export function toLocalYMD(d: Date): string {
     const yyyy = d.getFullYear();

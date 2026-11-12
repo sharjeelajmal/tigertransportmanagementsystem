@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import LedgerEntry from '@/models/LedgerEntry';
 import { LedgerPartyType } from '@/models/LedgerEntry';
-import { cashNarration } from '@/lib/ledgerRules';
+import { cashNarration, ymdToLedgerDate } from '@/lib/ledgerRules';
 
 // ─── POST /api/ledger/receipt ─────────────────────────────────────────────────
 // Credit = Cash Received | Debit = Cash Paid (Excel pattern)
@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
         if (!body.amount || body.amount <= 0) {
             return NextResponse.json({ success: false, error: 'Amount must be greater than 0' }, { status: 400 });
         }
-        if (!body.date) {
-            return NextResponse.json({ success: false, error: 'Date is required' }, { status: 400 });
+        // Calendar date → 00:00 UTC of that day (same convention as invoice ledger entries)
+        const entryDate = ymdToLedgerDate(body.date);
+        if (!entryDate) {
+            return NextResponse.json({ success: false, error: 'A valid date (YYYY-MM-DD) is required' }, { status: 400 });
         }
         if (!['Debit', 'Credit'].includes(body.entryType)) {
             return NextResponse.json({ success: false, error: 'Entry type must be Debit or Credit' }, { status: 400 });
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
             partyName: body.partyName.trim(),
             partyType: body.partyType || 'Customer',
             entryType: body.entryType,
-            date: new Date(body.date),
+            date: entryDate,
             docNo,
             narration,
             amount: body.amount,

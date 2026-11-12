@@ -25,6 +25,7 @@ interface EditModalProps {
 export default function EditModal({ isOpen, title, fields, onClose, onSave }: EditModalProps) {
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState("");
 
     // Initialize form data when modal opens
     useEffect(() => {
@@ -34,6 +35,7 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                 initialData[field.name] = field.value || '';
             });
             setFormData(initialData);
+            setSaveError("");
         }
     }, [isOpen, fields]);
 
@@ -43,11 +45,13 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
 
     const handleSave = async () => {
         setIsSaving(true);
+        setSaveError("");
         try {
             await onSave(formData);
             onClose();
         } catch (error) {
             console.error("Failed to save", error);
+            setSaveError(error instanceof Error && error.message ? error.message : "Could not save changes. Please try again.");
         } finally {
             setIsSaving(false);
         }
@@ -83,7 +87,7 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                             <CustomDropdown
                                                 label={field.label}
                                                 options={field.options?.map(opt => ({ label: opt, value: opt })) || []}
-                                                value={formData[field.name]}
+                                                value={formData[field.name] ?? ""}
                                                 onChange={(val) => handleChange(field.name, val)}
                                                 placeholder={`Select ${field.label}`}
                                                 className="w-full"
@@ -91,7 +95,7 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                         ) : field.type === 'date' ? (
                                             <CustomDatePicker
                                                 label={field.label}
-                                                value={formData[field.name]}
+                                                value={formData[field.name] ?? ""}
                                                 onChange={(date) => {
                                                     const y = date.getFullYear();
                                                     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -106,7 +110,7 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                                 </label>
                                                 <input
                                                     type={field.type || 'text'}
-                                                    value={formData[field.name]}
+                                                    value={formData[field.name] ?? ""}
                                                     onChange={(e) => handleChange(field.name, e.target.value)}
                                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 focus:border-[var(--primary)] transition-all disabled:opacity-50"
                                                 />
@@ -116,6 +120,12 @@ export default function EditModal({ isOpen, title, fields, onClose, onSave }: Ed
                                 ))}
                             </div>
                         </div>
+
+                        {saveError && (
+                            <div className="mx-6 mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                                {saveError}
+                            </div>
+                        )}
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">

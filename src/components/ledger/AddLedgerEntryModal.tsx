@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, PlusCircle, CheckCircle2, AlertCircle } from "lucide-react";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import CustomDropdown from "@/components/CustomDropdown";
+import { ledgerDateToYMD } from "@/lib/ledgerRules";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+/** A Cash Received / Cash Paid entry being corrected. */
+export interface EditableLedgerEntry {
+    _id: string;
+    date: string;        // stored ledger date (ISO, 00:00 UTC of the day)
+    docNo: string;
+    entryType: "Debit" | "Credit";
+    amount: number;
+}
 
 interface AddLedgerEntryModalProps {
     isOpen: boolean;
@@ -14,6 +24,8 @@ interface AddLedgerEntryModalProps {
     onSuccess: () => void;
     partyName: string;
     partyType: "Customer" | "Outsider" | "Both";
+    /** When set, the modal corrects this entry instead of adding a new one. */
+    editEntry?: EditableLedgerEntry | null;
 }
 
 const entryTypeOptions = [
@@ -32,7 +44,9 @@ export default function AddLedgerEntryModal({
     onSuccess,
     partyName,
     partyType,
+    editEntry = null,
 }: AddLedgerEntryModalProps) {
+    const isEdit = !!editEntry;
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
@@ -43,6 +57,18 @@ export default function AddLedgerEntryModal({
     const [amount, setAmount] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+    // Prefill when correcting an existing entry
+    useEffect(() => {
+        if (!isOpen || !editEntry) return;
+        setEntryType(editEntry.entryType);
+        setNarration(narrationFor(editEntry.entryType));
+        setDate(ledgerDateToYMD(editEntry.date) || todayStr);
+        setDocNo(editEntry.docNo || "");
+        setAmount(String(editEntry.amount));
+        setToast(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- todayStr only matters as a fallback
+    }, [isOpen, editEntry]);
 
     const resetForm = () => {
         setEntryType("Credit");
@@ -70,22 +96,28 @@ export default function AddLedgerEntryModal({
         setToast(null);
 
         try {
-            const res = await fetch("/api/ledger/receipt", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    partyName,
-                    partyType,
-                    entryType,
-                    date,
-                    docNo: docNo.trim() || undefined,
-                    narration: narrationFor(entryType),
-                    amount: parsed,
-                }),
-            });
-            const json = await res.json();
-            if (!json.success) throw new Error(json.error || "Failed to save");
-            setToast({ type: "success", msg: "Entry saved successfully!" });
+            const res = isEdit
+                ? await fetch(`/api/ledger/entries/${editEntry!._id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ entryType, date, docNo: docNo.trim(), amount: parsed }),
+                })
+                : await fetch("/api/ledger/receipt", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        partyName,
+                        partyType,
+                        entryType,
+                        date,
+                        docNo: docNo.trim() || undefined,
+                        narration: narrationFor(entryType),
+                        amount: parsed,
+                    }),
+                });
+            const json = await res.json().catch(() => null);
+            if (!json?.success) throw new Error(json?.error || "Failed to save");
+            setToast({ type: "success", msg: isEdit ? "Entry updated successfully!" : "Entry saved successfully!" });
             setTimeout(() => {
                 handleClose();
                 onSuccess();
@@ -136,7 +168,7 @@ export default function AddLedgerEntryModal({
                                         <PlusCircle size={18} style={{ color: "var(--primary)" }} />
                                     </div>
                                     <div>
-                                        <h2 className="text-sm font-black text-white">Add Entry</h2>
+                                        <h2 className="text-sm font-black text-white">{isEdit ? "Edit Entry" : "Add Entry"}</h2>
                                         <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[180px]">
                                             {partyName}
                                         </p>
@@ -272,7 +304,7 @@ export default function AddLedgerEntryModal({
                                                 Saving…
                                             </span>
                                         ) : (
-                                            "Save Entry"
+                                            isEdit ? "Update Entry" : "Save Entry"
                                         )}
                                     </motion.button>
                                 </div>

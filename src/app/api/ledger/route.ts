@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import Payroll from '@/models/Payroll';
 import OutsiderAllocation from '@/models/OutsiderAllocation';
 import LedgerEntry from '@/models/LedgerEntry';
+import { exactNameRegex, ymdToLedgerDate } from '@/lib/ledgerRules';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,7 @@ interface LedgerRow {
     docNo: string;
     narration: string;
     entryType: 'Debit' | 'Credit';
+    sourceType: string; // Invoice | Receipt | Payment | Allocation | Opening
     debit: number;
     credit: number;
     balance: number; // Running balance (computed server-side for reference)
@@ -32,28 +34,25 @@ export async function GET(req: NextRequest) {
         // Activated when partyName query param is provided
         // ════════════════════════════════════════════════════════════════════
         if (partyName.trim()) {
-            // ── Bug Fix #3: Date filter offset ───────────────────────────────────
-            // new Date('2025-03-06') → UTC midnight → shows as Mar 5 in UTC+5
-            // new Date('2025-03-06T00:00:00') → local midnight → correct
-            const dateFilter: any = {};
-            if (startDate && endDate) {
+            // Ledger dates are calendar days stored at 00:00 UTC, so the range is built in UTC too
+            // (independent of the server's timezone).
+            const DAY_MS = 24 * 60 * 60 * 1000;
+            const rangeStart = startDate ? ymdToLedgerDate(startDate) : null;
+            const endDay = endDate ? ymdToLedgerDate(endDate) : null;
+            const rangeEnd = endDay ? new Date(endDay.getTime() + DAY_MS - 1) : null;
+            const dateFilter: { date?: { $gte?: Date; $lte?: Date } } = {};
+            if (rangeStart || rangeEnd) {
                 dateFilter.date = {
-                    $gte: new Date(`${startDate}T00:00:00`),
-                    $lte: new Date(`${endDate}T23:59:59.999`),
+                    ...(rangeStart ? { $gte: rangeStart } : {}),
+                    ...(rangeEnd ? { $lte: rangeEnd } : {}),
                 };
-            } else if (startDate) {
-                dateFilter.date = { $gte: new Date(`${startDate}T00:00:00`) };
-            } else if (endDate) {
-                dateFilter.date = { $lte: new Date(`${endDate}T23:59:59.999`) };
             }
 
-            // ── Bug Fix #2: Dual-role & case-insensitive search ──────────────────
-            // Use a flexible regex: case-insensitive exact match on the full name.
-            // This matches entries regardless of whether they were originally created
-            // as Customer-type or Outsider-type — both share the same partyName field.
-            const escapedName = partyName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Exact (case/space-insensitive) name match — the same party grouping as the
+            // all-parties list, so "CASH (PARTY)" never pulls in "CASH (PARTY) CC LOGISTIC".
+            const partyRx = exactNameRegex(partyName);
             const entries = await LedgerEntry.find({
-                partyName: new RegExp(escapedName, 'i'),
+                partyName: partyRx,
                 ...dateFilter,
             })
                 .sort({ date: 1, createdAt: 1 })
@@ -61,10 +60,10 @@ export async function GET(req: NextRequest) {
 
             // ── Bug Fix #4: Opening Balance ──────────────────────────────────────
             let openingBalance = 0;
-            if (startDate) {
+            if (rangeStart) {
                 const pastEntries = await LedgerEntry.find({
-                    partyName: new RegExp(escapedName, 'i'),
-                    date: { $lt: new Date(`${startDate}T00:00:00`) }
+                    partyName: partyRx,
+                    date: { $lt: rangeStart }
                 }).lean();
                 
                 pastEntries.forEach((e: any) => {
@@ -92,19 +91,21 @@ export async function GET(req: NextRequest) {
                     docNo: e.docNo,
                     narration: e.narration,
                     entryType: e.entryType,
+                    sourceType: e.sourceType,
                     debit,
                     credit,
                     balance: runningBalance,
                 };
             });
 
-            if (startDate && openingBalance !== 0) {
+            if (rangeStart && openingBalance !== 0) {
                 rows.unshift({
                     _id: 'opening-balance',
-                    date: new Date(`${startDate}T00:00:00`).toISOString(),
+                    date: rangeStart.toISOString(),
                     docNo: '-',
                     narration: 'Opening Balance',
                     entryType: openingBalance >= 0 ? 'Debit' : 'Credit',
+                    sourceType: 'Opening',
                     debit: openingBalance > 0 ? openingBalance : 0,
                     credit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
                     balance: openingBalance,

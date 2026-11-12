@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Pencil, Trash2 } from "lucide-react";
 import Pagination from "@/components/Pagination";
+import { formatLedgerDate } from "@/lib/ledgerRules";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,9 +14,21 @@ interface LedgerRow {
     docNo: string;
     narration: string;
     entryType: "Debit" | "Credit";
+    sourceType?: string; // Invoice | Receipt | Payment | Allocation | Opening
     debit: number;
     credit: number;
     balance: number; // pre-computed running balance from API
+}
+
+export type { LedgerRow };
+
+/** Cash Received / Cash Paid entries are corrected here; bill entries are corrected from the invoice. */
+export const isManualLedgerEntry = (row: Pick<LedgerRow, "sourceType">) =>
+    row.sourceType === "Receipt" || row.sourceType === "Payment";
+
+interface RowActions {
+    onEdit?: (row: LedgerRow) => void;
+    onDelete?: (row: LedgerRow) => void;
 }
 
 interface GeneralTransaction {
@@ -27,7 +41,7 @@ interface GeneralTransaction {
 }
 
 type LedgerTransactionsProps =
-    | { mode: "party"; entries: LedgerRow[] }
+    | ({ mode: "party"; entries: LedgerRow[] } & RowActions)
     | { mode: "general"; transactions: GeneralTransaction[] };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -38,12 +52,8 @@ const ITEMS_PER_PAGE = 15;
 
 const fmt = (n: number) => (n > 0 ? n.toLocaleString() : "—");
 
-const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
+// Ledger dates are calendar days (stored 00:00 UTC) — formatted in UTC so every PC shows the same day
+const fmtDate = (d: string) => formatLedgerDate(d);
 
 const typeBadgeGeneral = (type: string) => {
     const map: Record<string, { bg: string; color: string }> = {
@@ -62,7 +72,44 @@ const statusColor = (status: string) => {
 
 // ─── Party Ledger Table ───────────────────────────────────────────────────────
 
-function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
+function RowActionButtons({ row, onEdit, onDelete }: { row: LedgerRow } & RowActions) {
+    if (!isManualLedgerEntry(row)) {
+        return (
+            <span className="text-[10px] font-semibold text-gray-300" title="Bill entries are corrected from the invoice">
+                —
+            </span>
+        );
+    }
+    return (
+        <div className="flex items-center gap-1.5">
+            {onEdit && (
+                <button
+                    type="button"
+                    onClick={() => onEdit(row)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg border-2 border-gray-200 text-[11px] font-bold text-gray-600 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors cursor-pointer"
+                    title="Correct this entry"
+                >
+                    <Pencil size={12} />
+                    Edit
+                </button>
+            )}
+            {onDelete && (
+                <button
+                    type="button"
+                    onClick={() => onDelete(row)}
+                    className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                    title="Delete this entry"
+                >
+                    <Trash2 size={14} />
+                </button>
+            )}
+        </div>
+    );
+}
+
+function PartyLedgerTable({ entries, onEdit, onDelete }: { entries: LedgerRow[] } & RowActions) {
+    const showActions = !!(onEdit || onDelete);
+    const headers = ["Date", "Doc No", "Narration", "Debit (PKR)", "Credit (PKR)", "Balance (PKR)", ...(showActions ? ["Action"] : [])];
     const [currentPage, setCurrentPage] = useState(1);
     const totalPages = Math.ceil(entries.length / ITEMS_PER_PAGE);
     const paginated = entries.slice(
@@ -77,7 +124,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-gray-100 bg-gray-50/60">
-                            {["Date", "Doc No", "Narration", "Debit (PKR)", "Credit (PKR)", "Balance (PKR)"].map((h) => (
+                            {headers.map((h) => (
                                 <th
                                     key={h}
                                     className="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider"
@@ -90,7 +137,7 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                     <tbody>
                         {paginated.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-16 text-center text-gray-400 text-sm">
+                                <td colSpan={headers.length} className="px-6 py-16 text-center text-gray-400 text-sm">
                                     No transactions found for this party
                                 </td>
                             </tr>
@@ -157,6 +204,12 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                                 </span>
                                             </span>
                                         </td>
+
+                                        {showActions && (
+                                            <td className="px-5 py-3.5">
+                                                <RowActionButtons row={row} onEdit={onEdit} onDelete={onDelete} />
+                                            </td>
+                                        )}
                                     </motion.tr>
                                 );
                             })
@@ -220,6 +273,11 @@ function PartyLedgerTable({ entries }: { entries: LedgerRow[] }) {
                                         </p>
                                     </div>
                                 </div>
+                                {showActions && isManualLedgerEntry(row) && (
+                                    <div className="pt-1">
+                                        <RowActionButtons row={row} onEdit={onEdit} onDelete={onDelete} />
+                                    </div>
+                                )}
                             </motion.div>
                         );
                     })
@@ -479,7 +537,7 @@ export default function LedgerTransactions(props: LedgerTransactionsProps) {
             </div>
 
             {props.mode === "party" ? (
-                <PartyLedgerTable entries={props.entries} />
+                <PartyLedgerTable entries={props.entries} onEdit={props.onEdit} onDelete={props.onDelete} />
             ) : (
                 <GeneralTransactionTable transactions={props.transactions} />
             )}

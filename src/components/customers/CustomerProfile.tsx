@@ -80,23 +80,19 @@ const CustomerProfile = ({ customerId }: CustomerProfileProps) => {
         setIsEditModalOpen(true);
     };
 
-    const handleSave = async (updatedData: any) => {
-        try {
-            const res = await fetch(`/api/customers/${customerId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedData),
-            });
-
-            if (res.ok) {
-                await fetchCustomer(); // Refresh data
-                setIsEditModalOpen(false);
-            } else {
-                console.error('Failed to update customer');
-            }
-        } catch (error) {
-            console.error('Error updating customer:', error);
+    const handleSave = async (updatedData: Record<string, unknown>) => {
+        const res = await fetch(`/api/customers/${customerId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData),
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success) {
+            // Shown inside the edit modal (e.g. "Another customer is already named ...")
+            throw new Error(json?.error || 'Failed to update customer');
         }
+        await fetchCustomer(); // Refresh data (name changes also moved bills and ledger entries)
+        setIsEditModalOpen(false);
     };
 
     if (loading) return <Loader fullScreen />;

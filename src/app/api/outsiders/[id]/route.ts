@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Outsider from '@/models/Outsider';
+import { cascadePartyRename, isPartyNameTaken, nameChanged, type RenameResult } from '@/lib/partyRename';
 
 export async function GET(
     req: NextRequest,
@@ -28,12 +29,40 @@ export async function PUT(
         await dbConnect();
         const { id } = await params;
         const body = await req.json();
-        const updatedOutsider = await Outsider.findByIdAndUpdate(id, body, { new: true });
-        if (!updatedOutsider) {
+
+        const existing = await Outsider.findById(id);
+        if (!existing) {
             return NextResponse.json({ success: false, error: 'Outsider not found' }, { status: 404 });
         }
-        return NextResponse.json({ success: true, data: updatedOutsider }, { status: 200 });
-    } catch (error: any) {
+
+        // Name edits must carry the party's bills and ledger entries to the new name.
+        let renamed: RenameResult | null = null;
+        if (body.outsiderName !== undefined) {
+            const newName = String(body.outsiderName ?? '').trim();
+            if (!newName) {
+                return NextResponse.json({ success: false, error: 'Outsider name is required' }, { status: 400 });
+            }
+            body.outsiderName = newName;
+            if (nameChanged(existing.outsiderName, newName)) {
+                if (await isPartyNameTaken('Outsider', newName, id)) {
+                    return NextResponse.json(
+                        { success: false, error: `Another outsider is already named "${newName}"` },
+                        { status: 409 }
+                    );
+                }
+                // Records first, party last: if anything fails, saving again finishes the move.
+                renamed = await cascadePartyRename('Outsider', existing.outsiderName, newName);
+            }
+        }
+
+        const updated = await Outsider.findByIdAndUpdate(id, body, {
+            new: true,
+        });
+        if (!updated) {
+            return NextResponse.json({ success: false, error: 'Outsider not found' }, { status: 404 });
+        }
+        return NextResponse.json({ success: true, data: updated, renamed }, { status: 200 });
+    } catch (error) {
         console.error('Error updating outsider:', error);
         return NextResponse.json({ success: false, error: 'Failed to update outsider' }, { status: 500 });
     }
